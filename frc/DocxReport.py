@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 from docxtpl import DocxTemplate
 from typing import Dict, Any, Optional
@@ -36,3 +37,9 @@ class DocxReport(DocxTemplate):
             raise SchemaError("Неправильный формат данных")
 
         super().render(context, jinja_env, autoescape)
+
+    def get_bytes_array(self):
+        file_stream = io.BytesIO()
+        self.save(file_stream)
+        file_stream.seek(0)
+        return file_stream

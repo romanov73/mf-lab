@@ -1,4 +1,7 @@
 from frc import DocxReport
+import io
+
+TEST_BINARY = True
 
 
 if __name__ == "__main__":
@@ -23,7 +26,14 @@ if __name__ == "__main__":
         "result": 1.23 + 1.2321 + 1
     }
     file.render(context)
-    file.save("test.docx")
+
+    if TEST_BINARY:
+        file_stream = file.get_bytes_array()
+        print(list(file_stream))
+        with open("test.docx", "wb") as f:
+            f.write(file_stream.read())
+    else:
+        file.save("test.docx")
 
 
 
