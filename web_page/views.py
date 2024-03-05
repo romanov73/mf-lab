@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-
+from django.urls import reverse
 
 courses: list = []
 
@@ -26,7 +26,7 @@ def create_course_view(request):
                   context={
                       "creating_title": "Создание курса",
                       "button_text": "Создать курс",
-                      "creating_url": "/CourseEditor"
+                      "creating_url": reverse('create_course')
                   })
 
 
@@ -34,13 +34,13 @@ def edit_course_view(request, id: int):
     if len(courses) > id:
         return render(request, 'create.html',
                       context={
-                          "creating_title": "Редактирования курса",
+                          "creating_title": "Редактирование курса",
                           "button_text": "Изменить курс",
-                          "creating_url": f"/CourseEditor/{id}",
+                          "creating_url": reverse('edit_course', kwargs={"course_id": id}),
                           "object_name": courses[id]["name"],
                           "object_description": courses[id]["text"]
                       })
-    return redirect("/")
+    return redirect("name")
 
 
 def add_course_action(request):
@@ -48,7 +48,7 @@ def add_course_action(request):
         "name": request.POST.get("name"),
         "text": request.POST.get("text")
     })
-    return redirect(f"/CourseEditor/{len(courses) - 1}")
+    return redirect("edit_course", len(courses) - 1)
 
 
 def update_course_action(request, id):
@@ -56,7 +56,7 @@ def update_course_action(request, id):
         "name": request.POST.get("name"),
         "text": request.POST.get("text")
     }
-    return redirect(f"/CourseEditor/{id}")
+    return redirect("edit_course", id)
 
 
 def course_list(request):

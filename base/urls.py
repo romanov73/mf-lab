@@ -22,7 +22,7 @@ import web_page.views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
-    path('CourseEditor', web_page.views.course_editor, kwargs={"course_id": None},  name='create_courses'),
-    path('CourseEditor/<int:course_id>', web_page.views.course_editor, name='')
+    path('course/editor', web_page.views.course_editor, kwargs={"course_id": None},  name='create_course'),
+    path('course/editor/<int:course_id>', web_page.views.course_editor, name='edit_course'),
     path('courses/', web_page.views.course_list, name='courses')
 ]
