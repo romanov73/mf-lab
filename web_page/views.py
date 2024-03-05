@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect
 
+
 courses: list = []
 
 
 def index(request):
-    return render(request, 'index.html', )
+    return render(request, 'index.html')
 
 
 def course_editor(request, course_id: int | None):
@@ -56,3 +57,7 @@ def update_course_action(request, id):
         "text": request.POST.get("text")
     }
     return redirect(f"/CourseEditor/{id}")
+
+
+def course_list(request):
+    return render(request, 'course_list.html')

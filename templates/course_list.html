@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-block mb-3">
+    <span class="d-inline-block fw-bold me-3">Курсы:</span>
+    <form class="d-inline-block w-75" role="search">
+        <input class="form-control" type="search" placeholder="Поиск" aria-label="Search">
+    </form>
+</div>
+
+<div class="bg-light px-2 py-1">
+    <div class="border border-primary rounded bg-white p-3">
+        <h5 class="h6 mb-2">Course 1. Electrophysiscs</h5>
+        <p class="text-muted mb-0">Description</p>
+    </div>
+
+    <div class="border border-primary rounded bg-white mt-3 p-3">
+        <h5 class="h6 mb-2">Course 2. Hydrodynamics</h5>
+        <p class="text-muted mb-0">Description</p>
+    </div>
+
+    <div class="border border-primary rounded bg-white mt-3 p-3">
+        <h5 class="h6 mb-2">Course 3. Electrochemistry</h5>
+        <p class="text-muted mb-0">Description</p>
+    </div>
+
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item">
+                <a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+
+{% endblock %}

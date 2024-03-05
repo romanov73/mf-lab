@@ -24,4 +24,5 @@ urlpatterns = [
     path('', web_page.views.index, name='main'),
     path('CourseEditor', web_page.views.course_editor, kwargs={"course_id": None},  name='create_courses'),
     path('CourseEditor/<int:course_id>', web_page.views.course_editor, name='')
+    path('courses/', web_page.views.course_list, name='courses')
 ]
