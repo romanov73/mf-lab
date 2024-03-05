@@ -4,6 +4,7 @@ from django.utils import timezone
 
 class Course(models.Model):
     name = models.CharField(max_length=255)
+    description = models.CharField(max_length=2048)
 
 
 class Task(models.Model):
@@ -15,7 +16,8 @@ class Task(models.Model):
 
 class File(models.Model):
     path = models.CharField(max_length=255)
-    task_id = models.ForeignKey(Task, on_delete=models.CASCADE)
+    task_id = models.ForeignKey(Task, on_delete=models.CASCADE, null=True)
+    course_id = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
 
 
 class Formula(models.Model):
