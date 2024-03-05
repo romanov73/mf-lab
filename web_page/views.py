@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
-courses: list = []
+from web_page.models import Course
 
 
 def index(request):
@@ -31,31 +31,28 @@ def create_course_view(request):
 
 
 def edit_course_view(request, id: int):
-    if len(courses) > id:
-        return render(request, 'create.html',
-                      context={
-                          "creating_title": "Редактирование курса",
-                          "button_text": "Изменить курс",
-                          "creating_url": reverse('edit_course', kwargs={"course_id": id}),
-                          "object_name": courses[id]["name"],
-                          "object_description": courses[id]["text"]
-                      })
-    return redirect("name")
+    course: Course = get_object_or_404(Course, id=id)
+    return render(request, 'create.html',
+                  context={
+                      "creating_title": "Редактирование курса",
+                      "button_text": "Изменить курс",
+                      "creating_url": reverse('edit_course', kwargs={"course_id": id}),
+                      "object_name": course.name,
+                      "object_description": course.description
+                  })
 
 
 def add_course_action(request):
-    courses.append({
-        "name": request.POST.get("name"),
-        "text": request.POST.get("text")
-    })
-    return redirect("edit_course", len(courses) - 1)
+    course: Course = Course(name=request.POST.get("name"), description=request.POST.get("text"))
+    course.save()
+    return redirect("edit_course", course.id)
 
 
 def update_course_action(request, id):
-    courses[id] = {
-        "name": request.POST.get("name"),
-        "text": request.POST.get("text")
-    }
+    course: Course = get_object_or_404(Course, id=id)
+    course.name = request.POST.get("name")
+    course.description = request.POST.get("text")
+    course.save()
     return redirect("edit_course", id)
 
 
