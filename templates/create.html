@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h5>{{creating_title}}</h5>
+<form method="post" action="{{creating_url}}">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="" class="form-label">Название:</label>
+        <input type="text" class="form-control border-black" name="name" required
+            value="{{object_name}}"
+        />
+    </div>
+    <div class="mb-3">
+        <label for="" class="form-label">Описание:</label>
+        <textarea  id="editor" name="text" class=" border-black">
+            {{object_description}}
+        </textarea>
+    </div>
+    <div class="mb-1 form-file">
+        <input type="file" class="form-control form-file-input border-black" name="attachments" multiple/>
+    </div>
+    <div class="d-flex justify-content-end mb-4">
+        <input class="btn btn-primary align-self-end " type="submit"
+            value="{{button_text}}"
+        />
+    </div>
+</form>
+<script>
+    var editor = new FroalaEditor('#editor',
+    {
+        //Это те инсрументы, которые используются
+        toolbarButtons:[
+            ['formatUL','formatOL', 'outdent', 'indent'],
+            ['insertLink'],
+            ['emoticons', 'insertImage']
+        ],
+        lineHeights:{
+            Double:1
+        },
+        language:'ru',
+        placeholderText : "",
+        quickInsertEnabled:false,
+    });
+</script>
+{% endblock %}
