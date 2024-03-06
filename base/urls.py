@@ -18,14 +18,17 @@ from django.contrib import admin
 from django.urls import path
 
 import web_page.views
+from web_page.logic import cource_editor, task_editor
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
+    path('course/editor', cource_editor.course_editor, kwargs={"course_id": None},  name='create_course'),
+    path('course/<int:course_id>/editor', cource_editor.course_editor, name='edit_course'),
+    path('course/<int:course_id>/task/editor', task_editor.task_editor, kwargs={"task_id": None}, name='create_task'),
+    path('course/<int:course_id>/task/<int:task_id>/editor', task_editor.task_editor, name='edit_task'),
     path('courses/', web_page.views.course_list, name='courses'),
     path('course/<int:course_id>/tasks', web_page.views.task_list, name='course-tasks'),
-    path('course/editor', web_page.views.course_editor, kwargs={"course_id": None},  name='create_course'),
-    path('course/editor/<int:course_id>', web_page.views.course_editor, name='edit_course'),
     path('task/<int:task_id>/editor/formulas', web_page.views.task_formulas, name='task_formulas'),
     path('task/<int:task_id>/editor/formulas/<int:formula_id>/extract', web_page.views.formula_extract_variables, name='task_formula_extract'),
     path('task/<int:task_id>/editor/formulas/create', web_page.views.task_create_formula, name='task_create_formula'),
