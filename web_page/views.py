@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -61,7 +62,42 @@ def update_course_action(request, id):
 
 
 def course_list(request):
-    return render(request, 'course_list.html')
+    name = request.GET.get('name')
+    if name:
+        courses = Course.objects.filter(name__icontains=name)
+    else:
+        courses = Course.objects.all()
+
+    courses_per_page = 5
+    paginator = Paginator(courses, courses_per_page)
+
+    page = request.GET.get('page')
+    try:
+        courses_page = paginator.page(page)
+    except PageNotAnInteger:
+        courses_page = paginator.page(1)
+    except EmptyPage:
+        courses_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'course_list.html', {'courses': courses_page})
+
+
+def task_list(request, course_id: int):
+    course = get_object_or_404(Course, id=course_id)
+    tasks = Task.objects.filter(course_id=course_id)
+
+    tasks_per_page = 5
+    paginator = Paginator(tasks, tasks_per_page)
+
+    page = request.GET.get('page')
+    try:
+        tasks_page = paginator.page(page)
+    except PageNotAnInteger:
+        tasks_page = paginator.page(1)
+    except EmptyPage:
+        tasks_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'task_list.html', {'course': course, 'tasks': tasks_page})
 
 
 def formula_extract_variables(request, formula_id: int, **kwargs):
@@ -115,16 +151,12 @@ def task_formulas_mapping(request, task_id: int, **kwargs):
 
 
 def task_formulas(request, task_id: int):
-    if request.method == 'GET':
-        task = get_object_or_404(Task, id=task_id)
+    task = get_object_or_404(Task, id=task_id)
 
-        return render(request,
-                      'task_formulas.html',
-                      {
-                          'formulas': task.formula_set.all(),
-                          'task_id': task.id
-                       }
-                      )
-
-    elif request.method == 'POST':
-        pass
+    return render(request,
+                  'task_formulas.html',
+                  {
+                      'formulas': task.formula_set.all(),
+                      'task_id': task.id
+                   }
+                  )
