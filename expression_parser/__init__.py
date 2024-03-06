@@ -1,1 +1,1 @@
-from formula import Formula
+from .formula import Formula

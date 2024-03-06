@@ -34,6 +34,10 @@ class Formula:
             self.error_text = "Ошибка валидации формулы"
             self.error_position = error_position
 
+    @property
+    def variables(self) -> list[str]:
+        return list(self._variables.keys())
+
     def _formula_validation(self, formula: str) -> int | None:
         """
         Проверка текстовой версии формула на синтаксическую корректность. Работает через ast.
