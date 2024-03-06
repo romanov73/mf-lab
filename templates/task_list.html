@@ -2,34 +2,36 @@
 
 {% block content %}
 
-<div class="d-flex mb-3 justify-content-between">
-    <span class="d-inline-block fw-bold h5">Курсы:</span>
-    <div class="d-inline-block">
-        <form class="d-flex" role="search">
-            <input class="form-control me-2" type="search" placeholder="Поиск" aria-label="Search" name="name">
-            <button type="submit" class="btn btn-primary">Найти</button>
-        </form>
+<div class="mb-3">
+    <div class="row align-items-start">
+        <div class="col">
+            <p class="h5">Курс: "{{course.name}}" </p>
+            <p class="h8">Лабораторные работы </p>
+        </div>
+        <div class="col-md-6 col-12 text-sm-end">
+            <button type="button" class="btn btn-outline-primary">Добавить лабораторную работу</button>
+        </div>
     </div>
 </div>
 
 <div class="bg-light px-2 py-1">
-    {% for course in courses %}
+    {% for task in tasks %}
 
     <div class="border border-primary rounded bg-white p-3 mb-3">
-        <a class="mb-2 h4 text-decoration-none" href="#">{{ course.name }}</a>
-        <p class="text-muted mb-0">{{ course.description }}</p>
+        <a class="h4 mb-2 text-decoration-none" href="#">{{ task.name }}</a>
+        <p class="text-muted mb-0">{{ task.description }}</p>
     </div>
 
     {% endfor %}
 
-     <nav aria-label="Page navigation" class="mt-4">
+    <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination justify-content-center">
-            {% if courses.has_previous %}
+            {% if tasks.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="?page=1">&laquo;</a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="?page={{ courses.previous_page_number }}">&lsaquo;</a>
+                <a class="page-link" href="?page={{ tasks.previous_page_number }}">&lsaquo;</a>
             </li>
             {% else %}
             <li class="page-item">
@@ -40,14 +42,14 @@
             </li>
             {% endif %}
             <li class="">
-                <a class="page-link" href="">{{ courses.number }}</a>
+                <a class="page-link" href="">{{ tasks.number }}</a>
             </li>
-            {% if courses.has_next %}
+            {% if tasks.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ courses.next_page_number }}">&rsaquo;</a>
+                <a class="page-link" href="?page={{ tasks.next_page_number }}">&rsaquo;</a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="?page={{ courses.paginator.num_pages }}">&raquo;</a>
+                <a class="page-link" href="?page={{ tasks.paginator.num_pages }}">&raquo;</a>
             </li>
             {% else %}
             <li class="page-item disabled">
@@ -60,6 +62,5 @@
         </ul>
     </nav>
 </div>
-
 
 {% endblock %}

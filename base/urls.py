@@ -22,5 +22,6 @@ import web_page.views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
-    path('courses/', web_page.views.course_list, name='courses')
+    path('courses/', web_page.views.course_list, name='courses'),
+    path('course/<int:course_id>/tasks', web_page.views.task_list, name='course-tasks')
 ]
