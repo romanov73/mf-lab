@@ -9,7 +9,7 @@
             <p class="h8">Лабораторные работы </p>
         </div>
         <div class="col-md-6 col-12 text-sm-end">
-            <button type="button" class="btn btn-outline-primary">Добавить лабораторную работу</button>
+            <a type="button" class="btn btn-outline-primary" href="{% url 'create_task' course_id=course.id %}">Добавить лабораторную работу</a>
         </div>
     </div>
 </div>
@@ -18,7 +18,7 @@
     {% for task in tasks %}
 
     <div class="border border-primary rounded bg-white p-3 mb-3">
-        <a class="h4 mb-2 text-decoration-none" href="#">{{ task.name }}</a>
+        <a class="h4 mb-2 text-decoration-none" href="{% url 'edit_task' course_id=task.course.id task_id=task.id %}">{{ task.name }}</a>
         <p class="text-muted mb-0">{{ task.description }}</p>
     </div>
 

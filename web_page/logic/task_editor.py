@@ -38,6 +38,7 @@ def edit_course_view(request, course_id: int, task_id: int):
                           "course_id": course_id,
                           "task_id": task_id
                       }),
+                      "task_id": task.id,
                       "object_name": task.name,
                       "object_description": task.description
                   })
@@ -49,9 +50,9 @@ def add_task_action(request, course_id: int):
         description=request.POST.get("text"),
         created_at=datetime.datetime.now()
     )
-    task.course_id = get_object_or_404(Course, id=course_id)
+    task.course = get_object_or_404(Course, id=course_id)
     task.save()
-    return redirect("edit_task", course_id, task.id)
+    return redirect("course-tasks", course_id)
 
 
 def update_task_action(request, course_id: int, task_id: int):

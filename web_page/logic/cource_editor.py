@@ -33,6 +33,7 @@ def edit_course_view(request, id: int):
                       "creating_title": "Редактирование курса",
                       "button_text": "Изменить курс",
                       "creating_url": reverse('edit_course', kwargs={"course_id": id}),
+                      "course_id": course.id,
                       "object_name": course.name,
                       "object_description": course.description
                   })

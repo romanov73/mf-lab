@@ -13,7 +13,6 @@ def index(request):
     return render(request, 'index.html')
 
 
-
 def course_list(request):
     name = request.GET.get('name')
     if name:
