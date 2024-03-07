@@ -19,7 +19,7 @@
 
     <div class="border border-primary rounded bg-white p-3 mb-3">
         <a class="h4 mb-2 text-decoration-none" href="{% url 'edit_task' course_id=task.course.id task_id=task.id %}">{{ task.name }}</a>
-        <p class="text-muted mb-0">{{ task.description }}</p>
+        <span class="text-muted mb-0">{{ task.description | safe }}</span>
     </div>
 
     {% endfor %}

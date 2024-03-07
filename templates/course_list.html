@@ -17,7 +17,7 @@
 
     <div class="border border-primary rounded bg-white p-3 mb-3">
         <a class="mb-2 h4 text-decoration-none" href="{% url 'edit_course' course_id=course.id %}">{{ course.name }}</a>
-        <p class="text-muted mb-0">{{ course.description }}</p>
+        <span class="text-muted mb-0">{{ course.description | safe }}</span>
     </div>
 
     {% endfor %}
