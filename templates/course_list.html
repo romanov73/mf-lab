@@ -17,7 +17,7 @@
     <a class=" mb-2 text-black text-decoration-none" href="{% url 'edit_course' course_id=course.id %}">
         <div class="border border-primary rounded bg-white p-3 mb-3">
             <p class="mb-2 h4 " >{{ course.name }}<p>
-            <div class="text-muted text mb-0">{{ course.description | safe }}</div>
+            <span class="text-muted mb-0">{{ course.description | truncatechars_html:100 | safe  }}</span>
         </div>
     </a>
 
@@ -61,16 +61,5 @@
         </ul>
     </nav>
 </div>
-
-<style>
-    .text {
-        display: block;
-        max-height: 100px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-</style>
-
 
 {% endblock %}
