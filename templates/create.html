@@ -2,7 +2,7 @@
 
 {% block content %}
 <h5>{{creating_title}}</h5>
-<form method="post" action="{{creating_url}}">
+<form id="my_form" enctype="multipart/form-data" method="post" action="{{creating_url}}">
     {% csrf_token %}
     <div class="mb-3">
         <label for="" class="form-label">Название:</label>
@@ -17,7 +17,7 @@
         </textarea>
     </div>
     <div class="mb-1 form-file">
-        <input type="file" class="form-control form-file-input border-black" name="attachments" multiple/>
+        <input class="filepond" type="file" name="attachments" multiple="multiple" id="InputFiles">
     </div>
     <div class="d-flex justify-content-end mb-4">
         {% if task_id %}
@@ -31,6 +31,7 @@
     </div>
 </form>
 <script>
+    var $crf_token = $('[name="csrfmiddlewaretoken"]').attr('value');
     var editor = new FroalaEditor('#editor',
     {
         //Это те инсрументы, которые используются
@@ -45,6 +46,76 @@
         language:'ru',
         placeholderText : "",
         quickInsertEnabled:false,
+        imageUploadURL: '/fp/image/',
+        imageUploadMethod: 'POST',
+        imageAllowedTypes: ['jpeg', 'jpg', 'png'],
+        requestHeaders: {
+            "X-CSRFToken": $crf_token
+        }
     });
+
+    $('#my_form').on('submit', function() {
+        var inputs = $("input[name='attachments']")
+        if (inputs.length > 0){
+            var total = `${inputs[0].value}`
+            for (var i = 1; i < inputs.length; i++) {
+                total += `|${inputs[i].value}`
+            }
+            inputs[0].name+="[]"
+            inputs[0].value = total
+        }
+        return true
+    });
+
+    FilePond.setOptions({
+        server: {
+            url: 'http://127.0.0.1:8000/fp',
+            process:{
+                url:'/process/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            },
+            patch:{
+                url: '/patch/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            },
+            revert: {
+                url:  '/revert/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            },
+            fetch:{
+                url:  '/fetch/?target=',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            }, 
+            load:{
+                url: '/load/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            }
+        },
+        allowMultiple: true,
+        name:"attachments"
+    })
+
+    const pond = FilePond.create(document.querySelector('#InputFiles'),{
+        files: [
+            {% for id in files %}
+            {
+                // the server file reference
+                source: '{{id}}',
+    
+                // set type to limbo to tell FilePond this is a temp file
+                options: {
+                    type: 'limbo',
+                },
+            },
+            {% endfor %}
+        ],
+    })
+    pond.aaddFile
+
 </script>
 {% endblock %}
