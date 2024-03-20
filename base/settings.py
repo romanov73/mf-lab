@@ -24,8 +24,6 @@ env = environ.Env(
 BASE_DIR = Path(__file__).resolve().parent.parent
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-DJANGO_DRF_FILEPOND_FILE_STORE_PATH = os.path.join(BASE_DIR, 'file_storage')
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -52,7 +50,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_jenkins',
-    'django_drf_filepond',
 
     'web_page'
 ]
@@ -61,7 +58,7 @@ JENKINS_TASKS = ['django_jenkins.tasks.run_pylint',
                  'django_jenkins.tasks.run_pep8',
                  'django_jenkins.tasks.run_pyflakes',
                  'django_jenkins.tasks.with_coverage',
-                 'django_jenkins.tasks.django_tests']
+                 'django_jenkins.tasks.django_tests',]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
