@@ -17,6 +17,7 @@ class Task(models.Model):
 
 class File(models.Model):
     path = models.CharField(max_length=255)
+    file_name = models.CharField(max_length=255)
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)

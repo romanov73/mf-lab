@@ -1,7 +1,15 @@
+import os
+import uuid
+from pathlib import Path
+
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
-from web_page.models import Course
+from web_page.models import Course, File
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def course_editor(request, course_id: int | None):
@@ -13,6 +21,7 @@ def course_editor(request, course_id: int | None):
     elif request.method == "POST":
         if course_id is None:
             return add_course_action(request)
+
         else:
             return update_course_action(request, course_id)
 
@@ -35,13 +44,23 @@ def edit_course_view(request, id: int):
                       "creating_url": reverse('edit_course', kwargs={"course_id": id}),
                       "course_id": course.id,
                       "object_name": course.name,
-                      "object_description": course.description
+                      "object_description": course.description,
+                      "files": [i.id for i in File.objects.filter(course=course)]
                   })
 
 
 def add_course_action(request):
     course: Course = Course(name=request.POST.get("name"), description=request.POST.get("text"))
     course.save()
+
+    if request.POST["attachments[]"]:
+        for fid in request.POST["attachments[]"].split("|"):
+            file: File = File.objects.get(id=fid)
+            if file is not None:
+                file.course = course
+                file.task = None
+                file.save()
+
     return redirect("edit_course", course.id)
 
 
@@ -50,4 +69,15 @@ def update_course_action(request, id):
     course.name = request.POST.get("name")
     course.description = request.POST.get("text")
     course.save()
+
+    if request.POST["attachments[]"]:
+
+        for fid in request.POST["attachments[]"].split("|"):
+            file: File = File.objects.get(id=fid)
+            if file is not None:
+                if file.course != course:
+                    file.course = course
+                    file.task = None
+                    file.save()
+
     return redirect("edit_course", id)

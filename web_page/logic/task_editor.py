@@ -3,7 +3,7 @@ import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
-from web_page.models import Course, Task
+from web_page.models import Course, Task, File
 
 
 def task_editor(request, course_id: int, task_id: int | None):
@@ -40,7 +40,8 @@ def edit_course_view(request, course_id: int, task_id: int):
                       }),
                       "task_id": task.id,
                       "object_name": task.name,
-                      "object_description": task.description
+                      "object_description": task.description,
+                      "files": [i.id for i in File.objects.filter(task=task)]
                   })
 
 
@@ -52,6 +53,15 @@ def add_task_action(request, course_id: int):
     )
     task.course = get_object_or_404(Course, id=course_id)
     task.save()
+
+    if request.POST["attachments[]"]:
+        for fid in request.POST["attachments[]"].split("|"):
+            file: File = File.objects.get(id=fid)
+            if file is not None:
+                file.course = None
+                file.task = task
+                file.save()
+
     return redirect("course-tasks", course_id)
 
 
@@ -60,5 +70,16 @@ def update_task_action(request, course_id: int, task_id: int):
     task.name = request.POST.get("name")
     task.description = request.POST.get("text")
     task.save()
+
+    if request.POST["attachments[]"]:
+
+        for fid in request.POST["attachments[]"].split("|"):
+            file: File = File.objects.get(id=fid)
+            if file is not None:
+                if file.task != task:
+                    file.course = None
+                    file.task = task
+                    file.save()
+
     return redirect("edit_task", course_id, task_id)
 
