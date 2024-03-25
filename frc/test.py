@@ -1,5 +1,5 @@
 from frc import DocxReport
-import io
+
 
 TEST_BINARY = True
 
@@ -29,9 +29,10 @@ if __name__ == "__main__":
 
     if TEST_BINARY:
         file_stream = file.get_bytes_array()
-        print(list(file_stream))
+        bytes_arr = file_stream.read()
+        print(bytes_arr)
         with open("test.docx", "wb") as f:
-            f.write(file_stream.read())
+            f.write(bytes_arr)
     else:
         file.save("test.docx")
 
