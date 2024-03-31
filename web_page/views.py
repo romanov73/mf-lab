@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from json import loads
 
-from web_page.models import Course, Formula, Variable, Task, Mapping
+from web_page.models import Course, Formula, Variable, Task, Mapping, File
 from expression_parser import Formula as Expression  # Да простит меня Бог
 
 
@@ -34,6 +34,25 @@ def course_list(request):
     return render(request, 'course_list.html', {'courses': courses_page})
 
 
+def course_page(request, course_id: int):
+    course = get_object_or_404(Course, id=course_id)
+    tasks = Task.objects.filter(course_id=course_id)
+    files = File.objects.filter(course_id=course_id)
+
+    tasks_per_page = 5
+    paginator = Paginator(tasks, tasks_per_page)
+
+    page = request.GET.get('page')
+    try:
+        tasks_page = paginator.page(page)
+    except PageNotAnInteger:
+        tasks_page = paginator.page(1)
+    except EmptyPage:
+        tasks_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'course.html', {'course': course, 'tasks': tasks_page, 'files': files})
+
+
 def task_list(request, course_id: int):
     course = get_object_or_404(Course, id=course_id)
     tasks = Task.objects.filter(course_id=course_id)
@@ -50,6 +69,14 @@ def task_list(request, course_id: int):
         tasks_page = paginator.page(paginator.num_pages)
 
     return render(request, 'task_list.html', {'course': course, 'tasks': tasks_page})
+
+
+def task_page(request, course_id, task_id: int):
+    task = get_object_or_404(Task, id=task_id)
+    files = File.objects.filter(task_id=task_id)
+
+    return render(request, 'task.html', {'task': task, 'files': files})
+
 
 
 def formula_extract_variables(request, formula_id: int, **kwargs):

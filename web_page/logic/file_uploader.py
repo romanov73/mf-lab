@@ -1,10 +1,11 @@
 import os
 import uuid
+import mimetypes
 
 from django.core.exceptions import BadRequest
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
@@ -61,4 +62,10 @@ def get_image(request, name: str):
     path = f"{IMAGE_DIR}\\{name}"
     file = default_storage.open(path)
 
+    return HttpResponse(file)
+
+
+def get_file(request, file_id: int):
+    path = f"{ATTACHMENTS_DIR}\\{file_id}"
+    file = default_storage.open(path)
     return HttpResponse(file)
