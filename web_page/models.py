@@ -4,11 +4,13 @@ from django.utils import timezone
 
 class Course(models.Model):
     name = models.CharField(max_length=255)
+    summary = models.CharField(max_length=255)
     description = models.CharField(max_length=2048)
 
 
 class Task(models.Model):
     name = models.CharField(max_length=255)
+    summary = models.CharField(max_length=255)
     description = models.CharField(max_length=2048)
     created_at = models.DateTimeField(default=timezone.now)
 

@@ -17,7 +17,7 @@
     <a class=" mb-2 text-black text-decoration-none" href="{% url 'edit_course' course_id=course.id %}">
         <div class="border border-primary rounded bg-white p-3 mb-3">
             <p class="mb-2 h4 " >{{ course.name }}<p>
-            <span class="text-muted mb-0">{{ course.description | truncatechars_html:100 | safe  }}</span>
+            <span class="text-muted mb-0">{{ course.summary }}</span>
         </div>
     </a>
 
