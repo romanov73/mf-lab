@@ -3,13 +3,13 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-5 col-md-7 col-12 text-md-start text-center">
-        <h4>Практическая часть лабораторной работы</h4>
+        <h4>{{ task.name }}. Практическая часть</h4>
     </div>
 </div>
 
 <div class="row mt-4">
     <div class="col-12">
-        <form id="practice-form">
+        <form id="practice-form" onsubmit="return onGetReport()">
             {% for formula in formulas %}
             <div class="row my-3 border">
                 <div class="col">
@@ -31,7 +31,7 @@
                                         {% endfor %}
                                     </select>
                                     {% else %}
-                                    <input type="number" class="form-control" name="{{ variable.id }}" required>
+                                    <input type="number" step="any" class="form-control" name="{{ variable.id }}" required>
                                     {% endif %}
                                 </div>
                             </div>
@@ -43,7 +43,7 @@
             {% endfor %}
             <div class="row my-4">
                 <div class="col text-center">
-                    <button type="button" class="btn btn-primary" id="get-report-btn">Получить отчет</button>
+                    <button type="submit" class="btn btn-primary" id="get-report-btn">Получить отчет</button>
                 </div>
             </div>
         </form>
@@ -53,8 +53,8 @@
 
 {% block scripts %}
 <script>
-    document.getElementById('get-report-btn').addEventListener('click', () => {
-        fetch('/get_report/', {
+    function onGetReport() {
+        fetch('{% url 'task_get_report' task_id=task.id %}', {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}'
@@ -71,6 +71,8 @@
             link.click();
             link.parentNode.removeChild(link);
         });
-    });
+
+        return false
+    }
 </script>
 {% endblock %}

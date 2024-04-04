@@ -32,6 +32,7 @@ urlpatterns = [
     path('course/<int:course_id>/tasks', web_page.views.task_list, name='course-tasks'),
     path('task/<int:task_id>', web_page.views.task_page, name='task'),
     path('task/<int:task_id>/practice/', web_page.views.task_practice, name='task_practice'),
+    path('task/<int:task_id>/practice/get_report', web_page.views.task_get_report, name='task_get_report'),
     path('task/<int:task_id>/editor/formulas', web_page.views.task_formulas, name='task_formulas'),
     path('task/<int:task_id>/editor/formulas/<int:formula_id>/extract', web_page.views.formula_extract_variables, name='task_formula_extract'),
     path('task/<int:task_id>/editor/formulas/create', web_page.views.task_create_formula, name='task_create_formula'),

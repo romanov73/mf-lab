@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from json import loads
 
+from frc import DocxReport
 from web_page.models import Course, Formula, Variable, Task, Mapping, File
 from expression_parser import Formula as Expression  # Да простит меня Бог
 
@@ -148,3 +149,30 @@ def task_practice(request, task_id):
         'formulas': formulas,
     }
     return render(request, 'task_practice.html', context)
+
+
+def task_get_report(request, task_id: int):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, id=task_id)
+        formulas = []
+        data = {'data': formulas}
+
+        for formula in task.formula_set.all():
+            expression = Expression(formula.expression)
+            variables = {
+                variable.name: float(request.POST.get(str(variable.id)))
+                for variable in formula.variable_set.all()
+            }
+            expression.set_variables(variables)
+            formulas.append({
+                'variables': [{
+                    'name': name,
+                    'value': value
+                } for name, value in variables.items()],
+                'formula': formula.expression,
+                'result': expression.calculate_result()
+            })
+
+        report = DocxReport()
+        report.render(data)
+        return HttpResponse(report.get_bytes_array())
