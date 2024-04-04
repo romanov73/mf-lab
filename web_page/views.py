@@ -71,12 +71,11 @@ def task_list(request, course_id: int):
     return render(request, 'task_list.html', {'course': course, 'tasks': tasks_page})
 
 
-def task_page(request, course_id, task_id: int):
+def task_page(request, task_id: int, **kwargs):
     task = get_object_or_404(Task, id=task_id)
     files = File.objects.filter(task_id=task_id)
 
     return render(request, 'task.html', {'task': task, 'files': files})
-
 
 
 def formula_extract_variables(request, formula_id: int, **kwargs):
@@ -139,3 +138,13 @@ def task_formulas(request, task_id: int):
                       'task_id': task.id
                    }
                   )
+
+
+def task_practice(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    formulas = task.formula_set.all()
+    context = {
+        'task': task,
+        'formulas': formulas,
+    }
+    return render(request, 'task_practice.html', context)
