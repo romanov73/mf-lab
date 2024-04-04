@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from json import loads
 
+from frc import DocxReport
 from web_page.models import Course, Formula, Variable, Task, Mapping, File
 from expression_parser import Formula as Expression  # Да простит меня Бог
 
@@ -71,12 +72,11 @@ def task_list(request, course_id: int):
     return render(request, 'task_list.html', {'course': course, 'tasks': tasks_page})
 
 
-def task_page(request, course_id, task_id: int):
+def task_page(request, task_id: int, **kwargs):
     task = get_object_or_404(Task, id=task_id)
     files = File.objects.filter(task_id=task_id)
 
     return render(request, 'task.html', {'task': task, 'files': files})
-
 
 
 def formula_extract_variables(request, formula_id: int, **kwargs):
@@ -139,3 +139,40 @@ def task_formulas(request, task_id: int):
                       'task_id': task.id
                    }
                   )
+
+
+def task_practice(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    formulas = task.formula_set.all()
+    context = {
+        'task': task,
+        'formulas': formulas,
+    }
+    return render(request, 'task_practice.html', context)
+
+
+def task_get_report(request, task_id: int):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, id=task_id)
+        formulas = []
+        data = {'data': formulas}
+
+        for formula in task.formula_set.all():
+            expression = Expression(formula.expression)
+            variables = {
+                variable.name: float(request.POST.get(str(variable.id)))
+                for variable in formula.variable_set.all()
+            }
+            expression.set_variables(variables)
+            formulas.append({
+                'variables': [{
+                    'name': name,
+                    'value': value
+                } for name, value in variables.items()],
+                'formula': formula.expression,
+                'result': expression.calculate_result()
+            })
+
+        report = DocxReport()
+        report.render(data)
+        return HttpResponse(report.get_bytes_array())
