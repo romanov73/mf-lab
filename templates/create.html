@@ -11,6 +11,12 @@
         />
     </div>
     <div class="mb-3">
+        <label for="" class="form-label">Краткое описание:</label>
+        <input type="text" class="form-control border-black" name="summary" required
+            value="{{object_summary}}"
+        />
+    </div>
+    <div class="mb-3">
         <label for="" class="form-label">Описание:</label>
         <textarea  id="editor" name="text" class=" border-black">
             {{object_description}}

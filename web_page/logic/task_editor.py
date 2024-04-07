@@ -40,6 +40,7 @@ def edit_course_view(request, course_id: int, task_id: int):
                       }),
                       "task_id": task.id,
                       "object_name": task.name,
+                      "object_summary": task.summary,
                       "object_description": task.description,
                       "files": [i.id for i in File.objects.filter(task=task)]
                   })
@@ -48,6 +49,7 @@ def edit_course_view(request, course_id: int, task_id: int):
 def add_task_action(request, course_id: int):
     task: Task = Task(
         name=request.POST.get("name"),
+        summary=request.POST.get("summary"),
         description=request.POST.get("text"),
         created_at=datetime.datetime.now()
     )
@@ -68,6 +70,7 @@ def add_task_action(request, course_id: int):
 def update_task_action(request, course_id: int, task_id: int):
     task: Task = get_object_or_404(Task, id=task_id)
     task.name = request.POST.get("name")
+    task.summary = request.POST.get("summary"),
     task.description = request.POST.get("text")
     task.save()
 

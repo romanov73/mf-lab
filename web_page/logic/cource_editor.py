@@ -44,13 +44,18 @@ def edit_course_view(request, id: int):
                       "creating_url": reverse('edit_course', kwargs={"course_id": id}),
                       "course_id": course.id,
                       "object_name": course.name,
+                      "object_summary": course.summary,
                       "object_description": course.description,
                       "files": [i.id for i in File.objects.filter(course=course)]
                   })
 
 
 def add_course_action(request):
-    course: Course = Course(name=request.POST.get("name"), description=request.POST.get("text"))
+    course: Course = Course(
+        name=request.POST.get("name"),
+        summary=request.POST.get("summary"),
+        description=request.POST.get("text")
+    )
     course.save()
 
     if request.POST["attachments[]"]:
@@ -67,6 +72,7 @@ def add_course_action(request):
 def update_course_action(request, id):
     course: Course = get_object_or_404(Course, id=id)
     course.name = request.POST.get("name")
+    course.summary = request.POST.get("summary")
     course.description = request.POST.get("text")
     course.save()
 
