@@ -34,6 +34,10 @@ class Formula:
             self.error_text = "Ошибка валидации формулы"
             self.error_position = error_position
 
+    @property
+    def variables(self) -> list[str]:
+        return list(self._variables.keys())
+
     def _formula_validation(self, formula: str) -> int | None:
         """
         Проверка текстовой версии формула на синтаксическую корректность. Работает через ast.
@@ -84,7 +88,7 @@ class Formula:
             self.error_text = str(ex)
             return None
 
-    def calculate_result(self) -> float | None:
+    def calculate_result(self, accuracy: int = 5) -> float | None:
         """
         Вычисляет значение по формуле для указанных в поле класса variables значений переменных.
         В случае невозможности вычисления значения(по арифметическим или иным причинам) ошибка в
@@ -102,7 +106,7 @@ class Formula:
 
         try:
             self.error_text = None
-            return ne.evaluate(self.expression, local_dict=self._variables).item()
+            return round(ne.evaluate(self.expression, local_dict=self._variables).item(), accuracy)
         except ArithmeticError as ae:
             self.error_text = f"Арифметическая ошибка:{str(ae)}"
         except Exception as ex:
