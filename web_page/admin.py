@@ -1,3 +1,10 @@
 from django.contrib import admin
+from . import models
 
-# Register your models here.
+
+admin.site.register(models.Task)
+admin.site.register(models.Variable)
+admin.site.register(models.File)
+admin.site.register(models.Formula)
+admin.site.register(models.Mapping)
+admin.site.register(models.Course)

@@ -15,8 +15,34 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include, re_path
+
+import web_page.views
+from web_page.logic import cource_editor, task_editor, file_uploader
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', web_page.views.index, name='main'),
+    path('course/editor', cource_editor.course_editor, kwargs={"course_id": None},  name='create_course'),
+    path('course/<int:course_id>/editor', cource_editor.course_editor, name='edit_course'),
+    path('course/<int:course_id>/task/editor', task_editor.task_editor, kwargs={"task_id": None}, name='create_task'),
+    path('course/<int:course_id>/task/<int:task_id>/editor', task_editor.task_editor, name='edit_task'),
+    path('courses/', web_page.views.course_list, name='courses'),
+    path('course/<int:course_id>', web_page.views.course_page, name='course'),
+    path('course/<int:course_id>/tasks', web_page.views.task_list, name='course-tasks'),
+    path('task/<int:task_id>', web_page.views.task_page, name='task'),
+    path('task/<int:task_id>/practice/', web_page.views.task_practice, name='task_practice'),
+    path('task/<int:task_id>/practice/get_report', web_page.views.task_get_report, name='task_get_report'),
+    path('task/<int:task_id>/editor/formulas', web_page.views.task_formulas, name='task_formulas'),
+    path('task/<int:task_id>/editor/formulas/<int:formula_id>/extract', web_page.views.formula_extract_variables, name='task_formula_extract'),
+    path('task/<int:task_id>/editor/formulas/create', web_page.views.task_create_formula, name='task_create_formula'),
+    path('task/<int:task_id>/editor/formulas/mapping', web_page.views.task_formulas_mapping, name='task_formulas_mapping'),
+    path('task/<int:task_id>/editor/formulas/<int:formula_id>/delete', web_page.views.task_delete_formula, name='task_delete_formula'),
+    path('fp/', web_page.logic.file_uploader.load_attachment, name='load_attachment'),
+    path('fp/revert/', web_page.logic.file_uploader.remove_attachment, name="remove_attachment"),
+    path('fp/process/', web_page.logic.file_uploader.upload_attachment, name="upload_attachment"),
+    path('fp/image/', web_page.logic.file_uploader.upload_image, name="upload_image"),
+    path('fp/image/<str:name>', web_page.logic.file_uploader.get_image, name="get_image"),
+    path('fp/file/<int:file_id>', web_page.logic.file_uploader.get_file, name="get_file"),
 ]
+

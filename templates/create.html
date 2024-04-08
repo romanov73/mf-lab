@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h5>{{creating_title}}</h5>
+<form id="my_form" enctype="multipart/form-data" method="post" action="{{creating_url}}">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="" class="form-label">Название:</label>
+        <input type="text" class="form-control border-black" name="name" required
+            value="{{object_name}}"
+        />
+    </div>
+    <div class="mb-3">
+        <label for="" class="form-label">Краткое описание:</label>
+        <input type="text" class="form-control border-black" name="summary" required
+            value="{{object_summary}}"
+        />
+    </div>
+    <div class="mb-3">
+        <label for="" class="form-label">Описание:</label>
+        <textarea  id="editor" name="text" class=" border-black">
+            {{object_description}}
+        </textarea>
+    </div>
+    <div class="mb-1 form-file">
+        <input class="filepond" type="file" name="attachments" multiple="multiple" id="InputFiles">
+    </div>
+    <div class="d-flex justify-content-end mb-4">
+        {% if task_id %}
+        <a class="btn btn-outline-primary align-self-end me-2" href="{% url 'task_formulas' task_id=task_id %}">Перейти к формулам</a>
+        {% elif course_id %}
+        <a class="btn btn-outline-primary align-self-end me-2" href="{% url 'course-tasks' course_id=course_id %}">Перейти к лабораторным</a>
+        {% endif %}
+        <input class="btn btn-primary align-self-end " type="submit"
+            value="{{button_text}}"
+        />
+    </div>
+</form>
+<script>
+    var $crf_token = $('[name="csrfmiddlewaretoken"]').attr('value');
+    var editor = new FroalaEditor('#editor',
+    {
+        //Это те инсрументы, которые используются
+        toolbarButtons:[
+            ['formatUL','formatOL', 'outdent', 'indent'],
+            ['insertLink'],
+            ['emoticons', 'insertImage']
+        ],
+        lineHeights:{
+            Double:1
+        },
+        language:'ru',
+        placeholderText : "",
+        quickInsertEnabled:false,
+        imageUploadURL: '/fp/image/',
+        imageUploadMethod: 'POST',
+        imageAllowedTypes: ['jpeg', 'jpg', 'png'],
+        requestHeaders: {
+            "X-CSRFToken": $crf_token
+        }
+    });
+
+    $('#my_form').on('submit', function() {
+        var inputs = $("input[name='attachments']")
+        if (inputs.length > 0){
+            var total = `${inputs[0].value}`
+            for (var i = 1; i < inputs.length; i++) {
+                total += `|${inputs[i].value}`
+            }
+            inputs[0].name+="[]"
+            inputs[0].value = total
+        }
+        return true
+    });
+
+    FilePond.setOptions({
+        server: {
+            url: 'http://127.0.0.1:8000/fp',
+            process:{
+                url:'/process/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            },
+            patch:{
+                url: '/patch/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            },
+            revert: {
+                url:  '/revert/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            },
+            fetch:{
+                url:  '/fetch/?target=',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            }, 
+            load:{
+                url: '/load/',
+                ode: 'same-origin',
+                headers: {"X-CSRFToken": $crf_token},
+            }
+        },
+        allowMultiple: true,
+        name:"attachments"
+    })
+
+    const pond = FilePond.create(document.querySelector('#InputFiles'),{
+        files: [
+            {% for id in files %}
+            {
+                // the server file reference
+                source: '{{id}}',
+    
+                // set type to limbo to tell FilePond this is a temp file
+                options: {
+                    type: 'limbo',
+                },
+            },
+            {% endfor %}
+        ],
+    })
+    pond.aaddFile
+
+</script>
+{% endblock %}
