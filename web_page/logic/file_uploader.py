@@ -11,8 +11,8 @@ from django.urls import reverse
 
 from web_page.models import File
 
-ATTACHMENTS_DIR = "storage\\files"
-IMAGE_DIR = "storage\\files\\images"
+ATTACHMENTS_DIR = os.path.join("storage", "files")
+IMAGE_DIR = os.path.join("storage", "files", "images")
 
 
 def load_attachment(request):
@@ -38,7 +38,7 @@ def upload_attachment(request):
     file = request.FILES.getlist("attachments")[0]
     file_obj: File = File(path="None", file_name=file.name)
     file_obj.save()
-    file_obj.path = f"{ATTACHMENTS_DIR}\\{file_obj.id}"
+    file_obj.path = os.path.join(ATTACHMENTS_DIR, str(file_obj.id))
     default_storage.save(file_obj.path, ContentFile(file.read()))
     file_obj.save()
 
@@ -51,7 +51,7 @@ def upload_image(request):
     guid = uuid.uuid4()
     _, extentions = os.path.splitext(file.name)
 
-    path = f"{IMAGE_DIR}\\{guid}{extentions}"
+    path = os.path.join(IMAGE_DIR, f"{guid}{extentions}")
     default_storage.save(path, ContentFile(file.read()))
     url = reverse('get_image', kwargs={"name": f"{guid}{extentions}"})
 
@@ -59,13 +59,13 @@ def upload_image(request):
 
 
 def get_image(request, name: str):
-    path = f"{IMAGE_DIR}\\{name}"
+    path = os.path.join(IMAGE_DIR, name)
     file = default_storage.open(path)
 
     return HttpResponse(file)
 
 
 def get_file(request, file_id: int):
-    path = f"{ATTACHMENTS_DIR}\\{file_id}"
+    path = os.path.join(ATTACHMENTS_DIR, str(file_id))
     file = default_storage.open(path)
     return HttpResponse(file)
