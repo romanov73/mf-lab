@@ -1,7 +1,49 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+from django.forms import BooleanField, forms
+
 from . import models
+from .models import User
 
 
+class MyUserChangeForm(UserChangeForm):
+    class Meta(UserChangeForm.Meta):
+        model = User
+
+
+class MyUserAdmin(UserAdmin):
+    model = MyUserChangeForm
+
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
+        ("Personal info", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                ),
+            },
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("username", "first_name", "last_name", "is_teacher", "password1", "password2"),
+            },
+        ),
+    )
+
+
+admin.site.register(User, MyUserAdmin)
 admin.site.register(models.Task)
 admin.site.register(models.Variable)
 admin.site.register(models.File)
