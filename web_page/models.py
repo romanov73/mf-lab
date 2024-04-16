@@ -1,11 +1,18 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
+
+
+class User(AbstractUser):
+    is_teacher = models.BooleanField(default=False)
 
 
 class Course(models.Model):
     name = models.CharField(max_length=255)
     summary = models.CharField(max_length=255)
     description = models.CharField(max_length=2048)
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class Task(models.Model):
@@ -40,5 +47,4 @@ class Variable(models.Model):
 class Mapping(models.Model):
     key = models.CharField(max_length=100)
     value = models.FloatField(max_length=10)
-
     variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
