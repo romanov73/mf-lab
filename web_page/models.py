@@ -2,6 +2,9 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 
+import web_page.models
+from base import settings
+
 
 class User(AbstractUser):
     is_teacher = models.BooleanField(default=False)
@@ -11,8 +14,7 @@ class Course(models.Model):
     name = models.CharField(max_length=255)
     summary = models.CharField(max_length=255)
     description = models.CharField(max_length=2048)
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
 
 class Task(models.Model):
