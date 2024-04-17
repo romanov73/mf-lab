@@ -23,6 +23,8 @@ from web_page.logic import cource_editor, task_editor, file_uploader
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
+    path('login', web_page.views.login, name='login'),
+    path('logout', web_page.views.logout, name='logout'),
     path('course/editor', cource_editor.course_editor, kwargs={"course_id": None},  name='create_course'),
     path('course/<int:course_id>/editor', cource_editor.course_editor, name='edit_course'),
     path('course/<int:course_id>/task/editor', task_editor.task_editor, kwargs={"task_id": None}, name='create_task'),

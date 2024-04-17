@@ -2,6 +2,7 @@ import os
 import uuid
 import mimetypes
 
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import BadRequest
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -10,11 +11,14 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
 from web_page.models import File
+from web_page.utils import for_teacher
 
 ATTACHMENTS_DIR = os.path.join("storage", "files")
 IMAGE_DIR = os.path.join("storage", "files", "images")
 
 
+@login_required
+@for_teacher()
 def load_attachment(request):
     if request.GET['restore'] is not None:
         file_obj: File = get_object_or_404(File, id=int(request.GET['restore']))
@@ -26,6 +30,8 @@ def load_attachment(request):
     return BadRequest("Ошибка удаления привязки")
 
 
+@login_required
+@for_teacher()
 def remove_attachment(request):
     file = get_object_or_404(File, id=int(request.body.decode('utf-8')))
     default_storage.delete(file.path)
@@ -34,6 +40,8 @@ def remove_attachment(request):
     return HttpResponse(None)
 
 
+@login_required
+@for_teacher()
 def upload_attachment(request):
     file = request.FILES.getlist("attachments")[0]
     file_obj: File = File(path="None", file_name=file.name)
@@ -45,6 +53,8 @@ def upload_attachment(request):
     return HttpResponse(file_obj.id)
 
 
+@login_required
+@for_teacher()
 def upload_image(request):
     file = request.FILES.getlist("file")[0]
 
@@ -58,6 +68,8 @@ def upload_image(request):
     return HttpResponse(f"{{ \"link\": \"{url}\" }}")
 
 
+@login_required
+@for_teacher()
 def get_image(request, name: str):
     path = os.path.join(IMAGE_DIR, name)
     file = default_storage.open(path)
@@ -65,6 +77,8 @@ def get_image(request, name: str):
     return HttpResponse(file)
 
 
+@login_required
+@for_teacher()
 def get_file(request, file_id: int):
     path = os.path.join(ATTACHMENTS_DIR, str(file_id))
     file = default_storage.open(path)
