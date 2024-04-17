@@ -67,9 +67,7 @@ def upload_image(request):
 
     return HttpResponse(f"{{ \"link\": \"{url}\" }}")
 
-
 @login_required
-@for_teacher()
 def get_image(request, name: str):
     path = os.path.join(IMAGE_DIR, name)
     file = default_storage.open(path)
@@ -78,7 +76,6 @@ def get_image(request, name: str):
 
 
 @login_required
-@for_teacher()
 def get_file(request, file_id: int):
     path = os.path.join(ATTACHMENTS_DIR, str(file_id))
     file = default_storage.open(path)
