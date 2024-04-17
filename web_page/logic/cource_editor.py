@@ -2,16 +2,20 @@ import os
 import uuid
 from pathlib import Path
 
+from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
 from web_page.models import Course, File
+from web_page.utils import for_teacher
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+@login_required
+@for_teacher()
 def course_editor(request, course_id: int | None):
     if request.method == "GET":
         if course_id is None:

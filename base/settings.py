@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = "web_page.User"
+LOGIN_URL = "/login"
 
 JENKINS_TASKS = ['django_jenkins.tasks.run_pylint',
                  'django_jenkins.tasks.run_pep8',
