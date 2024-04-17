@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from json import loads
 from django.urls import reverse
 from frc import DocxReport
-from web_page.models import Course, Formula, Variable, Task, Mapping, File
+from web_page.models import Course, Formula, Variable, Task, Mapping, File, Group
 from expression_parser import Formula as Expression  # Да простит меня Бог
 from web_page.utils import for_student, for_teacher
 
@@ -48,9 +48,9 @@ def course_list(request):
     elif request.user.is_teacher:
         courses = Course.objects.filter(user=request.user).all()
     elif name:
-        courses = Course.objects.filter(name__icontains=name).all()
+        courses = Course.objects.filter(groups__id=request.user.group_id).filter(name__icontains=name).all()
     else:
-        courses = Course.objects.all()
+        courses = Course.objects.filter(groups__id=request.user.group_id).all()
 
     courses_per_page = 5
     paginator = Paginator(courses, courses_per_page)
