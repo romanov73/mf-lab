@@ -67,6 +67,7 @@ def upload_image(request):
 
     return HttpResponse(f"{{ \"link\": \"{url}\" }}")
 
+
 @login_required
 def get_image(request, name: str):
     path = os.path.join(IMAGE_DIR, name)
