@@ -74,7 +74,7 @@ def add_task_action(request, course_id: int):
 def update_task_action(request, course_id: int, task_id: int):
     task: Task = get_object_or_404(Task, id=task_id)
     task.name = request.POST.get("name")
-    task.summary = request.POST.get("summary"),
+    task.summary = request.POST.get("summary")
     task.description = request.POST.get("text")
     task.save()
 
