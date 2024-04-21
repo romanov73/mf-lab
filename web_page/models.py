@@ -6,8 +6,16 @@ import web_page.models
 from base import settings
 
 
+class UniGroup(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class User(AbstractUser):
     is_teacher = models.BooleanField(default=False)
+    uni_group = models.ForeignKey(UniGroup, on_delete=models.CASCADE, null=True)
 
 
 class Course(models.Model):
@@ -15,6 +23,7 @@ class Course(models.Model):
     summary = models.CharField(max_length=255)
     description = models.CharField(max_length=2048)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    uni_groups = models.ManyToManyField(UniGroup)
 
 
 class Task(models.Model):
