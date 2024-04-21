@@ -17,7 +17,7 @@ class MyUserAdmin(UserAdmin):
 
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        ("Personal info", {"fields": ("first_name", "last_name", "email")}),
+        ("Personal info", {"fields": ("first_name", "last_name", "email", "is_teacher")}),
         (
             "Permissions",
             {
@@ -41,6 +41,8 @@ class MyUserAdmin(UserAdmin):
             },
         ),
     )
+
+    list_display = ("username", "first_name", "last_name", "is_teacher")
 
 
 admin.site.register(User, MyUserAdmin)

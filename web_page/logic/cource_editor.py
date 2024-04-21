@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 
 from web_page.models import Course, File, UniGroup
 from web_page.utils import for_teacher
@@ -68,7 +69,7 @@ def add_course_action(request):
         name=request.POST.get("name"),
         summary=request.POST.get("summary"),
         description=request.POST.get("text"),
-        user=request.user
+        user=request.user,
     )
     course.save()
     course.uni_groups.set(UniGroup.objects.filter(id__in=groups).all())
