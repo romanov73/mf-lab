@@ -8,7 +8,7 @@ from django.core.files.storage import default_storage
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
-from web_page.models import Course, File, Group
+from web_page.models import Course, File, UniGroup
 from web_page.utils import for_teacher
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,7 +36,7 @@ def create_course_view(request):
                       "creating_title": "Создание курса",
                       "button_text": "Создать курс",
                       "creating_url": reverse('create_course'),
-                      "groups": list(Group.objects.all().values("id", "name"))
+                      "groups": list(UniGroup.objects.all().values("id", "name"))
                   })
 
 
@@ -52,8 +52,8 @@ def edit_course_view(request, id: int):
                       "object_summary": course.summary,
                       "object_description": course.description,
                       "files": [i.id for i in File.objects.filter(course=course)],
-                      "groups": list(Group.objects.all().values("id", "name")),
-                      "my_groups": list(i["id"] for i in course.groups.values("id"))
+                      "groups": list(UniGroup.objects.all().values("id", "name")),
+                      "my_groups": list(i["id"] for i in course.uni_groups.values("id"))
                   })
 
 
@@ -71,7 +71,7 @@ def add_course_action(request):
         user=request.user
     )
     course.save()
-    course.groups.set(Group.objects.filter(id__in=groups).all())
+    course.uni_groups.set(UniGroup.objects.filter(id__in=groups).all())
 
 
     if request.POST["attachments[]"]:
@@ -96,7 +96,7 @@ def update_course_action(request, id):
     course.name = request.POST.get("name")
     course.summary = request.POST.get("summary")
     course.description = request.POST.get("text")
-    course.groups.set(Group.objects.filter(id__in=groups).all())
+    course.uni_groups.set(UniGroup.objects.filter(id__in=groups).all())
     course.save()
 
     if request.POST["attachments[]"]:

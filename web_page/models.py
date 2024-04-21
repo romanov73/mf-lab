@@ -3,14 +3,16 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 
 
-class Group(models.Model):
+class UniGroup(models.Model):
     name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class User(AbstractUser):
     is_teacher = models.BooleanField(default=False)
-
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    uni_group = models.ForeignKey(UniGroup, on_delete=models.CASCADE, null=True)
 
 
 class Course(models.Model):
@@ -19,7 +21,7 @@ class Course(models.Model):
     description = models.CharField(max_length=2048)
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    groups = models.ManyToManyField(Group)
+    uni_groups = models.ManyToManyField(UniGroup)
 
 
 class Task(models.Model):

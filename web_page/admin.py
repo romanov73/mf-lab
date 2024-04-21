@@ -25,7 +25,7 @@ class MyUserAdmin(UserAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
-                    "groups",
+                    "uni_group",
                     "user_permissions",
                 ),
             },
@@ -37,7 +37,7 @@ class MyUserAdmin(UserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("username", "first_name", "last_name", "is_teacher", "password1", "password2"),
+                "fields": ("username", "first_name", "last_name", "is_teacher", "uni_group", "password1", "password2"),
             },
         ),
     )
@@ -50,4 +50,4 @@ admin.site.register(models.File)
 admin.site.register(models.Formula)
 admin.site.register(models.Mapping)
 admin.site.register(models.Course)
-admin.site.register(models.Group)
+admin.site.register(models.UniGroup)
