@@ -15,7 +15,7 @@ class UniGroup(models.Model):
 
 class User(AbstractUser):
     is_teacher = models.BooleanField(default=False)
-    uni_group = models.ForeignKey(UniGroup, on_delete=models.CASCADE, null=True)
+    uni_group = models.ForeignKey(UniGroup, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Course(models.Model):
