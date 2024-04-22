@@ -2,7 +2,8 @@
 
 {% block content %}
 <h5>{{creating_title}}</h5>
-<form id="my_form" enctype="multipart/form-data" method="post" action="{{creating_url}}">
+
+<form id="my_form" enctype="multipart/form-data" method="post" action="{{creating_url}}" >
     {% csrf_token %}
     <div class="mb-3">
         <label for="" class="form-label">Название:</label>
@@ -12,10 +13,22 @@
     </div>
     <div class="mb-3">
         <label for="" class="form-label">Краткое описание:</label>
-        <input type="text" class="form-control border-black" name="summary" required
+        <input type="text" class="form-control border-black" name="summary"
             value="{{object_summary}}"
         />
     </div>
+    {% if groups != null %}
+    <div class="mb-3">
+        <input name="groups" type="text" hidden />
+        <select class="form-control" id="country" multiple >  
+            {% for group in groups %}
+            <option value="{{group.id}}" {% if my_groups != null and group.id in my_groups %} selected {% endif %}
+            >{{group.name}}</option>
+            {% endfor %}
+         </select>
+    </div>
+    {% endif %}
+
     <div class="mb-3">
         <label for="" class="form-label">Описание:</label>
         <textarea  id="editor" name="text" class=" border-black">
@@ -36,8 +49,10 @@
         />
     </div>
 </form>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.0/slimselect.min.js" integrity="sha512-mG8eLOuzKowvifd2czChe3LabGrcIU8naD1b9FUVe4+gzvtyzSy+5AafrHR57rHB+msrHlWsFaEYtumxkC90rg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
     var $crf_token = $('[name="csrfmiddlewaretoken"]').attr('value');
+
     var editor = new FroalaEditor('#editor',
     {
         //Это те инсрументы, которые используются
@@ -60,22 +75,9 @@
         }
     });
 
-    $('#my_form').on('submit', function() {
-        var inputs = $("input[name='attachments']")
-        if (inputs.length > 0){
-            var total = `${inputs[0].value}`
-            for (var i = 1; i < inputs.length; i++) {
-                total += `|${inputs[i].value}`
-            }
-            inputs[0].name+="[]"
-            inputs[0].value = total
-        }
-        return true
-    });
-
     FilePond.setOptions({
         server: {
-            url: 'http://127.0.0.1:8000/fp',
+            url: '/fp',
             process:{
                 url:'/process/',
                 ode: 'same-origin',
@@ -121,7 +123,44 @@
             {% endfor %}
         ],
     })
-    pond.aaddFile
 
+    {% if groups != null %}
+    const select = new SlimSelect({
+        select: "#country",
+        settings: {
+            closeOnSelect: false,
+            placeholderText: 'Выберите группы, для которых создаётся курс'
+          },
+     });
+    {% endif %}
+
+    $('#my_form').on('submit', function() {
+        {% if groups != null %}
+            var GroupsInputs = $("input[name='groups']")
+            var selected = select.getSelected();
+            console.log(selected)
+            if(selected.length == 0){
+                alert("Необходимо выбрать хотя бы одну группу")
+                return false;
+            }
+            GroupsInputs[0].value = selected.join("|")
+        {% endif %}
+        var AttchmentInputs = $("input[name='attachments']")
+        if (AttchmentInputs.length > 0){
+            var total = `${AttchmentInputs[0].value}`
+            for (var i = 1; i < AttchmentInputs.length; i++) {
+                total += `|${AttchmentInputs[i].value}`
+            }
+            AttchmentInputs[0].name+="[]"
+            AttchmentInputs[0].value = total
+        }
+        return true
+    });
 </script>
+<style>
+    #country {
+        height: 35px;
+        max-width: 400px;
+    }
+</style>
 {% endblock %}

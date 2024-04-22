@@ -1,11 +1,15 @@
 import datetime
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
 from web_page.models import Course, Task, File
+from web_page.utils import for_teacher
 
 
+@login_required
+@for_teacher()
 def task_editor(request, course_id: int, task_id: int | None):
     if request.method == "GET":
         if task_id is None:
@@ -70,7 +74,7 @@ def add_task_action(request, course_id: int):
 def update_task_action(request, course_id: int, task_id: int):
     task: Task = get_object_or_404(Task, id=task_id)
     task.name = request.POST.get("name")
-    task.summary = request.POST.get("summary"),
+    task.summary = request.POST.get("summary")
     task.description = request.POST.get("text")
     task.save()
 

@@ -19,7 +19,7 @@
 
 <div class="bg-light px-2 py-1">
     {% for task in tasks %}
-    <a class=" mb-2 text-black text-decoration-none" href="{% url 'edit_task' course_id=task.course.id task_id=task.id %}">
+    <a class=" mb-2 text-black text-decoration-none" href="{% url 'task' task_id=task.id %}">
         <div class="border border-primary rounded bg-white p-3 mb-3">
             <p class="h4 mb-2 text-decoration-none">{{ task.name }}</p>
             <span class="text-muted mb-0">{{ task.summary }}</span>

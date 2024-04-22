@@ -15,6 +15,8 @@
     <!--Это файловый браузер. Стандартный... Ну скажем так о нём либо молча, либо никак-->
     <script src="https://unpkg.com/filepond@4.30.6/dist/filepond.js"></script>
     <link href="https://unpkg.com/filepond@4.30.6/dist/filepond.css" rel="stylesheet" />
+    <!--Это ссылка на стили для селектора выбора курсов. Огромное человеческое спасибо всем причастным к его созданибю. Просто замечательная и очень простая в работе вещь. Не стыдно и ссылку на них добавить https://slimselectjs.com-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.0/slimselect.min.css" integrity="sha512-QhrDqeRszsauAfwqszbR3mtxV3ZWp44Lfuio9t1ccs7H15+ggGbpOqaq4dIYZZS3REFLqjQEC1BjmYDxyqz0ZA==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </head>
 <body class="d-flex flex-column min-vh-100" >
@@ -26,8 +28,10 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav ms-md-auto">
                 <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'courses' %}">Список курсов</a></li>
+                {% if request.user.is_teacher %}
                 <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'create_course' %}">Создать курс</a></li>
-                <li class="nav-item pe-md-5"><a class="nav-link text-light text-decoration-underline text-center" href="#">Выход</a></li>
+                {% endif %}
+                <li class="nav-item pe-md-5"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'logout' %}">Выход</a></li>
             </ul>
         </div>
     </nav>
