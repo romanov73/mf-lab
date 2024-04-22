@@ -17,7 +17,8 @@ import os
 env = environ.Env(
     # set casting, default value
     DEBUG=(bool, True),
-    SECRET_KEY=(str, "my-secret-key")
+    SECRET_KEY=(str, "my-secret-key"),
+    ALLOWED_HOSTS=(list, [])
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,7 +38,7 @@ SECRET_KEY = env('SECRET_KEY')
 if SECRET_KEY == "my-secret-key":
     print("Secret Key is not set")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 
 # Application definition
