@@ -20,6 +20,9 @@ from django.urls import path, include, re_path
 import web_page.views
 from web_page.logic import cource_editor, task_editor, file_uploader
 
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
@@ -46,5 +49,5 @@ urlpatterns = [
     path('fp/image/', web_page.logic.file_uploader.upload_image, name="upload_image"),
     path('fp/image/<str:name>', web_page.logic.file_uploader.get_image, name="get_image"),
     path('fp/file/<int:file_id>', web_page.logic.file_uploader.get_file, name="get_file"),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
