@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 
 import web_page.views
-from web_page.logic import cource_editor, task_editor, file_uploader
+from web_page.logic import cource_editor, task_editor, file_uploader, user_login_contoroller
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -26,8 +26,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
-    path('login', web_page.views.login, name='login'),
-    path('logout', web_page.views.logout, name='logout'),
+    path('login', user_login_contoroller.login, name='login'),
+    path('logout', user_login_contoroller.logout, name='logout'),
     path('course/editor', cource_editor.course_editor, kwargs={"course_id": None},  name='create_course'),
     path('course/<int:course_id>/editor', cource_editor.course_editor, name='edit_course'),
     path('course/<int:course_id>/task/editor', task_editor.task_editor, kwargs={"task_id": None}, name='create_task'),

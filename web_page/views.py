@@ -1,11 +1,8 @@
-import django.contrib.auth
-from django.contrib.auth import authenticate
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from json import loads
-from django.urls import reverse
 from frc import DocxReport
 from web_page.models import Course, Formula, Variable, Task, Mapping, File, UniGroup
 from expression_parser import Formula as Expression  # Да простит меня Бог
@@ -15,29 +12,6 @@ from web_page.utils import for_student, for_teacher
 @login_required
 def index(request):
     return render(request, 'index.html')
-
-
-def login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        next_page = request.GET.get('next')
-
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            django.contrib.auth.login(request, user)
-            if next_page:
-                return redirect(next_page)
-            return redirect(reverse('main'))
-        else:
-            return render(request, 'login.html', {'message': 'Неверный логин или пароль'})
-    return render(request, 'login.html')
-
-
-@login_required
-def logout(request):
-    django.contrib.auth.logout(request)
-    return redirect(reverse('login'))
 
 
 @login_required
@@ -184,7 +158,7 @@ def task_formulas(request, task_id: int):
                   {
                       'formulas': task.formula_set.all(),
                       'task_id': task.id
-                   }
+                  }
                   )
 
 
