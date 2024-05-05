@@ -8,8 +8,9 @@ from ldap3.core.exceptions import LDAPException
 
 from web_page.models import User
 
-LDAP_HOST_NAME: str = "ldap://192.168.1.120:389"  # Адрес ldap сервера. Да, это IP ноута в моей локалке.
-LDAP_BASE_DOMAIN: str = 'ramhlocal,dc=com'  # Базовый домен организации. В политехе, очевидно, другой
+LDAP_HOST_NAME: str = "ldap://lk.ustu:389"  # Адрес ldap сервера. Да, это IP ноута в моей локалке.
+LDAP_BASE_DOMAIN: str = 'ams,dc=ulstu,dc=ru'  # Базовый домен организации. В политехе, очевидно, другой
+LDAP_OU_TEXT: str = "accounts"
 
 
 def _find_user(request, username: str, password: str) -> User | None:
@@ -19,20 +20,25 @@ def _find_user(request, username: str, password: str) -> User | None:
     try:
         # Подключаемся к LDAP под доменом LDAP_BASE_DOMAIN и именем пользователя username
         with Connection(LDAP_HOST_NAME,
-                        user=f'cn={username},dc={LDAP_BASE_DOMAIN}',
+                        user=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
                         password=password) as conn:
 
             # Смотрим, что всё хорошо и мы подключились
             if conn.result["description"] == "success":
-                # Тут нужна более сложная логика. Надо будет извлечь из ldap данные пользователя(в том числе группу) и
-                # проверить, что они соответсвуют тем, что в БД. Если нет - поправить БД и дальше уже выдать сущность
-                # кстати, в ldap есть вроде как userID, так что можно будет по нему привязываться
+                user = User.objects.get(username=username)
+
+                # todo Тут нужно получить флаг is_teacher получать
+                if user is None:
+                    # todo Тут у нас возник вопрос. Добавлять при входе.
+                    user = User(username=username,
+                                is_teacher=True,  # todo получить значение флага из LDAP и использовать
+                                uni_group=None)
+                    user.save()
+                return user
                 # results = conn.search(f"dc={LDAP_BASE_DOMAIN}",
                 #                          search_scope= SUBTREE,
                 #                          search_filter = "objectClass=posixAccount"
                 # )
-
-                return authenticate(request, username=username, password=password)
     except LDAPException:
         pass
     # Если ldap не смог - то значит и авторизация не успешная. Печально...
