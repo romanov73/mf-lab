@@ -21,11 +21,18 @@ def _find_user(request, username: str, password: str) -> User | None:
         # Подключаемся к LDAP под доменом LDAP_BASE_DOMAIN и именем пользователя username
         with Connection(LDAP_HOST_NAME,
                         user=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
-                        password=password) as conn:
+                        password=password, check_names=True) as conn:
 
             # Смотрим, что всё хорошо и мы подключились
             if conn.result["description"] == "success":
-                user = User.objects.get(username=username)
+                a = conn.search(
+                    search_base=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
+                    search_filter='(objectClass=*)',
+                    search_scope=SUBTREE,
+                    attributes=["cn"]
+                )
+                print(conn.entries)
+                user = User.objects.filter(username=username).first()
 
                 # todo Тут нужно получить флаг is_teacher получать
                 if user is None:
@@ -39,8 +46,8 @@ def _find_user(request, username: str, password: str) -> User | None:
                 #                          search_scope= SUBTREE,
                 #                          search_filter = "objectClass=posixAccount"
                 # )
-    except LDAPException:
-        pass
+    except LDAPException as e:
+        print(e)
     # Если ldap не смог - то значит и авторизация не успешная. Печально...
     return None
 
