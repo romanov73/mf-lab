@@ -18,7 +18,7 @@ def _prepare_database():
     Метод служит для подготвки БД к работе. По большому счёту он просто ставит флаг в false,
      чтобы потом можно было почистить базу от тех, кото на LDAP больше нет
     """
-    User.objects.update(is_present=False)  # todo Возможно тут нужен промежуточный метод get_all
+    User.objects.filter(is_superuser=0).update(is_present=False)  # todo Возможно тут нужен промежуточный метод get_all
 
 
 def _database_after_clear():
@@ -36,7 +36,14 @@ def _load_students_from_LDAP_group(conn: Connection) -> list[str] | None:
     если что-то пошло не так
     """
     # todo Возвращаем список всех студентов (по полю uid из группы LDAP_STUDENTS_GROUP_NAME)
-    return None
+    res = conn.search(
+        search_base="cn=LEARNING,ou=groups,dc=ams,dc=ulstu,dc=ru",
+        search_filter="(memberUid=*)",
+        search_scope=SUBTREE,
+        attributes=['memberUid']
+    )
+
+    return conn.entries[0].memberUid
 
 
 def _load_teachers_from_LDAP_group(conn: Connection) -> list[str] | None:
@@ -45,7 +52,14 @@ def _load_teachers_from_LDAP_group(conn: Connection) -> list[str] | None:
     если что-то пошло не так
     """
     # todo Возвращаем список всех препожавателей (по полю uid из группы LDAP_TEACHERS_GROUP_NAME)
-    return None
+    res = conn.search(
+        search_base="cn=WORKING,ou=groups,dc=ams,dc=ulstu,dc=ru",
+        search_filter="(memberUid=*)",
+        search_scope=SUBTREE,
+        attributes=['memberUid']
+    )
+
+    return conn.entries[0].memberUid
 
 
 def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
@@ -62,7 +76,7 @@ def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
         attributes=["cn"]
     )
     # todo Проверить, что мы получили ответ и что он успешный... Если нет - return None
-    name: str = conn.entries  # todo Получить имя из ответа(я не знаю, как конкретно это сделать, ибо не вижу структуры.
+    name: str = conn.entries[0].cn  # todo Получить имя из ответа(я не знаю, как конкретно это сделать, ибо не вижу структуры.
     if name is not None and name != "":
         return name
     return None
@@ -139,7 +153,7 @@ def synchronise(admin_login: str, admin_password: str) -> str:
     try:
         # Подключаемся к LDAP под доменом LDAP_BASE_DOMAIN и именем пользователя username
         with Connection(LDAP_HOST_NAME,
-                        user=f'{LDAP_ACCOUNT_NAME_TYPE}={admin_login},ou={LDAP_ACCOUNT_OU},dc={LDAP_BASE_DOMAIN}',
+                        user=f'{admin_login}',
                         password=admin_password, check_names=True) as conn:
 
             # Смотрим, что всё хорошо и мы подключились
@@ -159,3 +173,10 @@ def synchronise(admin_login: str, admin_password: str) -> str:
         return f"ERROR on connection to LDAP: {e}"
     except Exception as e:
         return f"SOME ERROR: {e}"
+
+
+if __name__ == '__main__':
+    with Connection(LDAP_HOST_NAME,
+                    user=f'cn=vlmf,ou=services,dc=ams,dc=ulstu,dc=ru',
+                    password='a7*mE9+jAZaI&mE3@m01', check_names=True) as conn:
+        _load_students_from_LDAP_group(conn)

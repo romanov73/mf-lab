@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from ldap3 import Connection, SUBTREE
+from ldap3 import Connection, SUBTREE, LEVEL
 from ldap3.core.exceptions import LDAPException
 
 from web_page.models import User
@@ -21,7 +21,7 @@ def _find_user(request, username: str, password: str) -> User | None:
         # Подключаемся к LDAP под доменом LDAP_BASE_DOMAIN и именем пользователя username
         with Connection(LDAP_HOST_NAME,
                         user=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
-                        password=password, check_names=True) as conn:
+                        password=password) as conn:
 
             # Смотрим, что всё хорошо и мы подключились
             if conn.result["description"] == "success":
@@ -29,9 +29,12 @@ def _find_user(request, username: str, password: str) -> User | None:
                     search_base=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
                     search_filter='(objectClass=*)',
                     search_scope=SUBTREE,
-                    attributes=["cn"]
+                    attributes=["cn", "member"]
                 )
                 print(conn.entries)
+
+
+
                 user = User.objects.filter(username=username).first()
 
                 # todo Тут нужно получить флаг is_teacher получать
