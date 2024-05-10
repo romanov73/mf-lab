@@ -18,3 +18,12 @@ def for_student():
         raise PermissionDenied
 
     return user_passes_test(is_student)
+
+
+def for_admin():
+    def is_admin(user):
+        if user.is_superuser:
+            return True
+        raise PermissionDenied
+
+    return user_passes_test(is_admin)
