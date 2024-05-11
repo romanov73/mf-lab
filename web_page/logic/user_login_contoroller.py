@@ -25,34 +25,16 @@ def _find_user(request, username: str, password: str) -> User | None:
 
             # Смотрим, что всё хорошо и мы подключились
             if conn.result["description"] == "success":
-                a = conn.search(
-                    search_base=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
-                    search_filter='(objectClass=*)',
-                    search_scope=SUBTREE,
-                    attributes=["cn", "member"]
-                )
-                print(conn.entries)
-
-
-
                 user = User.objects.filter(username=username).first()
-
-                # todo Тут нужно получить флаг is_teacher получать
                 if user is None:
-                    # todo Тут у нас возник вопрос. Добавлять при входе.
-                    user = User(username=username,
-                                is_teacher=True,  # todo получить значение флага из LDAP и использовать
-                                uni_group=None)
-                    user.save()
+                    pass
+                    # todo Как насчёт того, чтобы в случае, если авторизация прошла,
+                    #  но при этом в локальной БД ничего нет, запускать синхронизацию
                 return user
-                # results = conn.search(f"dc={LDAP_BASE_DOMAIN}",
-                #                          search_scope= SUBTREE,
-                #                          search_filter = "objectClass=posixAccount"
-                # )
     except LDAPException as e:
         print(e)
-    # Если ldap не смог - то значит и авторизация не успешная. Печально...
-    return None
+    # Если ldap не смог - то используем внутреннюю БД. По многочисленным заявкам трудящихся.
+    return authenticate(request, username=username, password=password)
 
 
 def login(request):
