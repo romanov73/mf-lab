@@ -1,10 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.forms import BooleanField, forms
+from django.shortcuts import render
+from django.template import Template, Context
 
 from . import models
 from .models import User
+from .utils import for_admin
+
 
 
 class MyUserChangeForm(UserChangeForm):
@@ -43,6 +48,15 @@ class MyUserAdmin(UserAdmin):
     )
 
     list_display = ("username", "first_name", "last_name", "is_teacher")
+
+
+@login_required
+@for_admin()
+def admin_sync(request):
+    from .logic.users_syncronisation import synchronise
+    synchronise("cn=vlmf,ou=services,dc=ams,dc=ulstu,dc=ru",
+                "a7*mE9+jAZaI&mE3@m01")
+    return render(request, 'index.html')
 
 
 admin.site.register(User, MyUserAdmin)
