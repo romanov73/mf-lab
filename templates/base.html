@@ -26,6 +26,7 @@
                 <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'courses' %}">Список курсов</a></li>
                 {% if request.user.is_teacher %}
                 <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'create_course' %}">Создать курс</a></li>
+                <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'groups_list' %}">Список групп</a></li>
                 {% endif %}
                 <li class="nav-item pe-md-5"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'logout' %}">Выход</a></li>
             </ul>
