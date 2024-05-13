@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<form class="d-flex mb-3 justify-content-between" action="{% url 'group_delete' group_id=group.id %}" method="post">
-    {% csrf_token %}
-    <span class="d-inline-block fw-bold h5">{% if group %}Изменить группу{% else %}Создать группу{% endif %}</span>
-    <button type="submit" class="btn btn-outline-danger">Удалить группу</button>
-</form>
+    {% if group.id %}
+        <form class="d-flex mb-3 justify-content-between" action="{% url 'group_delete' group_id=group.id %}" method="post">
+            {% csrf_token %}
+            <span class="d-inline-block fw-bold h5">{% if group %}Изменить группу{% else %}Создать группу{% endif %}</span>
+            <button type="submit" class="btn btn-outline-danger">Удалить группу</button>
+        </form>
+    {% endif %}
 
 <form id="my_form" enctype="multipart/form-data" method="post">
     {% csrf_token %}
@@ -54,10 +56,6 @@
             var GroupsInputs = $("input[name='students']")
             var selected = select.getSelected();
             console.log(selected)
-            if(selected.length == 0){
-                alert("Необходимо выбрать хотя бы одного студента")
-                return false;
-            }
             GroupsInputs[0].value = selected.join("|")
         {% endif %}
     });

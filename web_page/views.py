@@ -73,18 +73,19 @@ def group_page(request, group_id=None, **kwargs):
 
     if group_id is None:
         group = UniGroup(name=request.POST.get('name'))
+        group.save()
+        group_id = group.id
     else:
         group = get_object_or_404(UniGroup, id=group_id)
+        for student in group.user_set.all():
+            student.uni_group = None
+            student.save()
 
-    for student in group.user_set.all():
-        student.uni_group = None
-        student.save()
+    if request.POST.get('students'):
+        for student in [User.objects.get(id=int(student_id)) for student_id in request.POST.get('students').split('|')]:
+            student.uni_group = group
+            student.save()
 
-    students = [User.objects.get(id=int(student_id)) for student_id in request.POST.get('students').split('|')]
-
-    for student in students:
-        student.uni_group = group
-        student.save()
 
     return redirect('group_page', group_id=group_id)
 
