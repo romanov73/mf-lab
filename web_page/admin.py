@@ -54,8 +54,8 @@ class MyUserAdmin(UserAdmin):
 @for_admin()
 def admin_sync(request):
     from .logic.users_syncronisation import synchronise
-    synchronise("cn=vlmf,ou=services,dc=ams,dc=ulstu,dc=ru",
-                "a7*mE9+jAZaI&mE3@m01")
+    synchronise("",
+                "")
     return render(request, 'index.html')
 
 

@@ -177,6 +177,6 @@ def synchronise(admin_login: str, admin_password: str) -> str:
 
 if __name__ == '__main__':
     with Connection(LDAP_HOST_NAME,
-                    user=f'cn=vlmf,ou=services,dc=ams,dc=ulstu,dc=ru',
-                    password='a7*mE9+jAZaI&mE3@m01', check_names=True) as conn:
+                    user=f'',
+                    password='', check_names=True) as conn:
         _load_students_from_LDAP_group(conn)
