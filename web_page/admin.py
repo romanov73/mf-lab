@@ -9,7 +9,7 @@ from django.template import Template, Context
 from . import models
 from .models import User
 from .utils import for_admin
-
+from base.settings import LDAP_ADMIN_DATA
 
 
 class MyUserChangeForm(UserChangeForm):
@@ -54,8 +54,8 @@ class MyUserAdmin(UserAdmin):
 @for_admin()
 def admin_sync(request):
     from .logic.users_syncronisation import synchronise
-    synchronise("",
-                "")
+    synchronise(LDAP_ADMIN_DATA["USER"],
+                LDAP_ADMIN_DATA["PASSWORD"])
     return render(request, 'index.html')
 
 

@@ -18,7 +18,9 @@ env = environ.Env(
     # set casting, default value
     DEBUG=(bool, True),
     SECRET_KEY=(str, "my-secret-key"),
-    ALLOWED_HOSTS=(list, [])
+    ALLOWED_HOSTS=(list, []),
+    LDAP_ADMIN_LOGIN=(str, ""),
+    LDAP_ADMIN_PASSWORD=(str, ""),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,7 +41,10 @@ if SECRET_KEY == "my-secret-key":
     print("Secret Key is not set")
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
-
+LDAP_ADMIN_DATA = {
+    "USER": env("LDAP_ADMIN_LOGIN"),
+    "PASSWORD": env("LDAP_ADMIN_PASSWORD")
+}
 
 # Application definition
 
