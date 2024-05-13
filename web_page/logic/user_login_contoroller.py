@@ -25,6 +25,13 @@ def _find_user(request, username: str, password: str) -> User | None:
 
             # Смотрим, что всё хорошо и мы подключились
             if conn.result["description"] == "success":
+                a = conn.search(
+                    search_base=f'uid={username},ou={LDAP_OU_TEXT},dc={LDAP_BASE_DOMAIN}',
+                    search_filter='(objectClass=*)',
+                    search_scope=SUBTREE,
+                    attributes=["cn", "member"]
+                )
+                print(conn.entries)
                 user = User.objects.filter(username=username).first()
                 if user is None:
                     pass
