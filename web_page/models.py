@@ -16,7 +16,7 @@ class UniGroup(models.Model):
 class User(AbstractUser):
     full_name = models.CharField(max_length=255, default="Unknown")
     is_teacher = models.BooleanField(default=False)
-    uni_group = models.ForeignKey(UniGroup, on_delete=models.CASCADE, null=True, blank=True)
+    uni_group = models.ForeignKey(UniGroup, on_delete=models.SET_NULL, null=True, blank=True)
     is_present = models.BooleanField(default=True)
 
 
