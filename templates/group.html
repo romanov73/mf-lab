@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% if group.id %}
+        <form class="d-flex mb-3 justify-content-between" action="{% url 'group_delete' group_id=group.id %}" method="post">
+            {% csrf_token %}
+            <span class="d-inline-block fw-bold h5">{% if group %}Изменить группу{% else %}Создать группу{% endif %}</span>
+            <button type="submit" class="btn btn-outline-danger">Удалить группу</button>
+        </form>
+    {% endif %}
+
+<form id="my_form" enctype="multipart/form-data" method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="" class="form-label">Название:</label>
+        <input type="text" class="form-control border-black" name="name" required
+            value="{% if group %}{{group.name}}{% endif %}"
+        />
+    </div>
+    {% if students != null %}
+    <div class="mb-3">
+        <input name="students" type="text" hidden />
+        <select class="form-control" id="country" multiple >  
+            {% for student in students %}
+            <option value="{{student.id}}">{{student.full_name}}</option>
+            {% endfor %}
+            {% for student in group.user_set.all %}
+            <option value="{{ student.id }}" selected>{{ student.full_name }}</option>
+            {% endfor %}
+         </select>
+    </div>
+    {% endif %}
+    <div class="d-flex justify-content-between mb-4">
+        <input class="btn btn-primary align-self-end " type="submit"
+            value="{% if group %}Изменить{% else %}Создать{% endif %}"
+        />
+    </div>
+</form>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.0/slimselect.min.js" integrity="sha512-mG8eLOuzKowvifd2czChe3LabGrcIU8naD1b9FUVe4+gzvtyzSy+5AafrHR57rHB+msrHlWsFaEYtumxkC90rg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    var $crf_token = $('[name="csrfmiddlewaretoken"]').attr('value');
+
+
+    {% if students != null %}
+    const select = new SlimSelect({
+        select: "#country",
+        settings: {
+            closeOnSelect: false,
+            placeholderText: 'Выберите студентов'
+          },
+     });
+    {% endif %}
+
+    $('#my_form').on('submit', function() {
+        {% if students != null %}
+            var GroupsInputs = $("input[name='students']")
+            var selected = select.getSelected();
+            console.log(selected)
+            GroupsInputs[0].value = selected.join("|")
+        {% endif %}
+    });
+</script>
+<style>
+    #country {
+        height: 35px;
+        max-width: 400px;
+    }
+</style>
+{% endblock %}

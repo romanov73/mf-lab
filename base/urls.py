@@ -18,7 +18,8 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 
 import web_page.views
-from web_page.logic import cource_editor, task_editor, file_uploader
+import web_page.admin
+from web_page.logic import cource_editor, task_editor, file_uploader, user_login_contoroller
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -26,8 +27,12 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
-    path('login', web_page.views.login, name='login'),
-    path('logout', web_page.views.logout, name='logout'),
+    path('login', user_login_contoroller.login, name='login'),
+    path('logout', user_login_contoroller.logout, name='logout'),
+    path('groups', web_page.views.groups_list, name='groups_list'),
+    path('group/editor', web_page.views.group_page, kwargs={'group_id': None}, name='group_create'),
+    path('group/<int:group_id>/editor', web_page.views.group_page, name='group_page'),
+    path('group/<int:group_id>/delete', web_page.views.delete_group, name='group_delete'),
     path('course/editor', cource_editor.course_editor, kwargs={"course_id": None},  name='create_course'),
     path('course/<int:course_id>/editor', cource_editor.course_editor, name='edit_course'),
     path('course/<int:course_id>/task/editor', task_editor.task_editor, kwargs={"task_id": None}, name='create_task'),
@@ -49,5 +54,6 @@ urlpatterns = [
     path('fp/image/', web_page.logic.file_uploader.upload_image, name="upload_image"),
     path('fp/image/<str:name>', web_page.logic.file_uploader.get_image, name="get_image"),
     path('fp/file/<int:file_id>', web_page.logic.file_uploader.get_file, name="get_file"),
+    path("sync", web_page.admin.admin_sync, name="sync")
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

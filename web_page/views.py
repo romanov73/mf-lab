@@ -1,13 +1,10 @@
-import django.contrib.auth
-from django.contrib.auth import authenticate
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from json import loads
-from django.urls import reverse
 from frc import DocxReport
-from web_page.models import Course, Formula, Variable, Task, Mapping, File, UniGroup
+from web_page.models import Course, Formula, Variable, Task, Mapping, File, UniGroup, User
 from expression_parser import Formula as Expression  # Да простит меня Бог
 from web_page.utils import for_student, for_teacher
 
@@ -15,29 +12,6 @@ from web_page.utils import for_student, for_teacher
 @login_required
 def index(request):
     return render(request, 'index.html')
-
-
-def login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        next_page = request.GET.get('next')
-
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            django.contrib.auth.login(request, user)
-            if next_page:
-                return redirect(next_page)
-            return redirect(reverse('main'))
-        else:
-            return render(request, 'login.html', {'message': 'Неверный логин или пароль'})
-    return render(request, 'login.html')
-
-
-@login_required
-def logout(request):
-    django.contrib.auth.logout(request)
-    return redirect(reverse('login'))
 
 
 @login_required
@@ -64,6 +38,67 @@ def course_list(request):
         courses_page = paginator.page(paginator.num_pages)
 
     return render(request, 'course_list.html', {'courses': courses_page, 'user': request.user})
+
+
+@login_required
+@for_teacher()
+def groups_list(request):
+    groups = UniGroup.objects.all()
+
+    groups_per_page = 10
+    paginator = Paginator(groups, groups_per_page)
+
+    page = request.GET.get('page')
+
+    try:
+        groups_page = paginator.page(page)
+    except PageNotAnInteger:
+        groups_page = paginator.page(1)
+    except EmptyPage:
+        groups_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'groups_list.html', {'groups': groups_page})
+
+
+@login_required
+@for_teacher()
+def group_page(request, group_id=None, **kwargs):
+    if request.method == 'GET':
+        if group_id is None:
+            return render(request, 'group.html', {'students': User.objects.filter(is_teacher=False, uni_group=None).all()})
+
+        group = get_object_or_404(UniGroup, id=group_id)
+
+        return render(request, 'group.html', {'group': group, 'students': User.objects.filter(is_teacher=False, uni_group=None).all()})
+
+    if group_id is None:
+        group = UniGroup(name=request.POST.get('name'))
+        group.save()
+        group_id = group.id
+    else:
+        group = get_object_or_404(UniGroup, id=group_id)
+        for student in group.user_set.all():
+            student.uni_group = None
+            student.save()
+
+    if request.POST.get('students'):
+        for student in [User.objects.get(id=int(student_id)) for student_id in request.POST.get('students').split('|')]:
+            student.uni_group = group
+            student.save()
+
+
+    return redirect('group_page', group_id=group_id)
+
+
+@login_required
+@for_teacher()
+def delete_group(request, group_id, **kwargs):
+    if request.method == 'POST':
+        group = get_object_or_404(UniGroup, id=group_id)
+
+        group.delete()
+
+        return redirect('groups_list')
 
 
 @login_required
@@ -184,7 +219,7 @@ def task_formulas(request, task_id: int):
                   {
                       'formulas': task.formula_set.all(),
                       'task_id': task.id
-                   }
+                  }
                   )
 
 
