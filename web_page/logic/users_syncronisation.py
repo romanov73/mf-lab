@@ -30,37 +30,58 @@ def _database_after_clear():
     User.objects.filter(is_present=False).delete()
 
 
-def _load_students_from_LDAP_group(conn: Connection) -> list[str] | None:
-    """
-    Метод для получения из LDAP списка логинов всех пользователей, которые являются студентами. Возвращает None,
-    если что-то пошло не так
-    """
-    # todo Возвращаем список всех студентов (по полю uid из группы LDAP_STUDENTS_GROUP_NAME)
-    res = conn.search(
+def _paging_load_students_from_LDAP_group(conn: Connection, handler, page_size: int = 100) -> str:
+    res = ""
+    _ = conn.search(
         search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
         search_filter="(memberUid=*)",
         search_scope=SUBTREE,
-        attributes=['memberUid']
+        attributes=['memberUid'],
+        paged_size=page_size
     )
 
-    return conn.entries[0].memberUid
+    res += handler(conn, conn.response.memberUid, False)
+    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    with cookie:
+        _ = conn.search(
+            search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
+            search_filter="(memberUid=*)",
+            search_scope=SUBTREE,
+            attributes=['memberUid'],
+            paged_size=page_size,
+            paged_cookie=cookie
+        )
+
+        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+        res += handler(conn, conn.response.memberUid, False)
+    return res
 
 
-def _load_teachers_from_LDAP_group(conn: Connection) -> list[str] | None:
-    """
-    Метод для получения из LDAP списка логинов всех пользователей, которые являются преподавателями. Возвращает None,
-    если что-то пошло не так
-    """
-    # todo Возвращаем список всех препожавателей (по полю uid из группы LDAP_TEACHERS_GROUP_NAME)
-    res = conn.search(
+def _paging_load_teachers_from_LDAP_group(conn: Connection, handler, page_size: int = 100) -> str:
+    res = ""
+    _ = conn.search(
         search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
         search_filter="(memberUid=*)",
         search_scope=SUBTREE,
-        attributes=['memberUid']
+        attributes=['memberUid'],
+        paged_size=page_size
     )
 
-    return conn.entries[0].memberUid
+    res += handler(conn, conn.response.memberUid, True)
+    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    with cookie:
+        _ = conn.search(
+            search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
+            search_filter="(memberUid=*)",
+            search_scope=SUBTREE,
+            attributes=['memberUid'],
+            paged_size=page_size,
+            paged_cookie=cookie
+        )
 
+        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+        res += handler(conn, conn.response.memberUid, True)
+    return res
 
 def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
     """
@@ -199,8 +220,8 @@ def synchronise(admin_login: str, admin_password: str) -> str:
                 _prepare_database()
 
                 res: str = ""
-                res += f"Students:\n{_synch_user(conn, _load_students_from_LDAP_group(conn), False)}"
-                res += f"Teachers:\n{_synch_user(conn, _load_teachers_from_LDAP_group(conn), True)}"
+                res += f"Students:\n{_paging_load_students_from_LDAP_group(conn,_synch_user)}"
+                res += f"Teachers:\n{_paging_load_teachers_from_LDAP_group(conn,_synch_user)}"
 
                 _database_after_clear()
                 return res
@@ -214,7 +235,8 @@ def synchronise(admin_login: str, admin_password: str) -> str:
 
 
 if __name__ == '__main__':
-    with Connection(LDAP_HOST_NAME,
-                    user=f'',
-                    password='', check_names=True) as conn:
-        _load_students_from_LDAP_group(conn)
+    pass
+    # with Connection(LDAP_HOST_NAME,
+    #                 user=f'',
+    #                 password='', check_names=True) as conn:
+    #     _load_students_from_LDAP_group(conn)
