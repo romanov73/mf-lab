@@ -1,4 +1,4 @@
-from ldap3 import Connection, SUBTREE
+from ldap3 import Connection, SUBTREE, extend
 from ldap3.core.exceptions import LDAPException
 
 from web_page.models import User, UniGroup
@@ -31,8 +31,7 @@ def _database_after_clear():
 
 
 def _paging_load_students_from_LDAP_group(conn: Connection, handler, page_size: int = 100) -> str:
-    res = ""
-    _ = conn.search(
+    paged_list = extend.standard.paged_search(
         search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
         search_filter="(memberUid=*)",
         search_scope=SUBTREE,
@@ -40,26 +39,20 @@ def _paging_load_students_from_LDAP_group(conn: Connection, handler, page_size: 
         paged_size=page_size
     )
 
-    res += handler(conn, conn.response.memberUid, False)
-    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-    with cookie:
-        _ = conn.search(
-            search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
-            search_filter="(memberUid=*)",
-            search_scope=SUBTREE,
-            attributes=['memberUid'],
-            paged_size=page_size,
-            paged_cookie=cookie
-        )
+    res: str = ""
+    for user in paged_list:
+        try:
+            tmp = handler(conn, user, False)
+            if tmp is not None:
+                res += f"{tmp}\n"
+        except Exception as e:
+            res = f"ERROR for {user}: {e}"
 
-        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-        res += handler(conn, conn.response.memberUid, False)
     return res
 
 
 def _paging_load_teachers_from_LDAP_group(conn: Connection, handler, page_size: int = 100) -> str:
-    res = ""
-    _ = conn.search(
+    paged_list = extend.standard.paged_search(
         search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
         search_filter="(memberUid=*)",
         search_scope=SUBTREE,
@@ -67,21 +60,17 @@ def _paging_load_teachers_from_LDAP_group(conn: Connection, handler, page_size: 
         paged_size=page_size
     )
 
-    res += handler(conn, conn.response.memberUid, True)
-    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-    with cookie:
-        _ = conn.search(
-            search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
-            search_filter="(memberUid=*)",
-            search_scope=SUBTREE,
-            attributes=['memberUid'],
-            paged_size=page_size,
-            paged_cookie=cookie
-        )
+    res: str = ""
+    for user in paged_list:
+        try:
+            tmp = handler(conn, user, True)
+            if tmp is not None:
+                res += f"{tmp}\n"
+        except Exception as e:
+            res = f"ERROR for {user}: {e}"
 
-        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-        res += handler(conn, conn.response.memberUid, True)
     return res
+
 
 def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
     """
@@ -183,27 +172,6 @@ def _synch_single_user(conn: Connection, username: str, is_teacher: bool) -> str
         return f"ERROR on {username}: {e}"
 
 
-def _synch_user(conn: Connection, users: list[str], is_teacher: bool) -> str:
-    """
-    Просто обёртка, чтобы было удобнее. По факту получает список пользователей и последовательно их синхронизирует.
-    Возвращает 'Логи': если что-то поменяли у пользователя - это тут будет,
-    так же если с каким-то пользователем что-то не вышло - тоже будет отражено
-    """
-    if users is None or len(users) == 0:
-        return "loaded list is null or empty"
-
-    res: str = ""
-    for user in users:
-        try:
-            tmp = _synch_single_user(conn, user, is_teacher)
-            if tmp is not None:
-                res += f"{tmp}\n"
-        except Exception as e:
-            res = f"ERROR for {user}: {e}"
-
-    return res
-
-
 def synchronise(admin_login: str, admin_password: str) -> str:
     """
     Основной метод синхронизации. Он требует на вход креды админа в LDAP, но использует его только для чтения.
@@ -220,8 +188,8 @@ def synchronise(admin_login: str, admin_password: str) -> str:
                 _prepare_database()
 
                 res: str = ""
-                res += f"Students:\n{_paging_load_students_from_LDAP_group(conn,_synch_user)}"
-                res += f"Teachers:\n{_paging_load_teachers_from_LDAP_group(conn,_synch_user)}"
+                res += f"Students:\n{_paging_load_students_from_LDAP_group(conn, _synch_single_user)}"
+                res += f"Teachers:\n{_paging_load_teachers_from_LDAP_group(conn, _synch_single_user)}"
 
                 _database_after_clear()
                 return res
