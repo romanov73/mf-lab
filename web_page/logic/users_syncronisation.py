@@ -1,7 +1,7 @@
 from ldap3 import Connection, SUBTREE
 from ldap3.core.exceptions import LDAPException
 
-from web_page.models import User
+from web_page.models import User, UniGroup
 
 LDAP_HOST_NAME: str = "ldap://lk.ustu:389"  # Адрес ldap сервера. Да, это IP ноута в моей локалке.
 LDAP_BASE_DOMAIN: str = 'ams,dc=ulstu,dc=ru'  # Базовый домен организации. В политехе, очевидно, другой
@@ -30,37 +30,58 @@ def _database_after_clear():
     User.objects.filter(is_present=False).delete()
 
 
-def _load_students_from_LDAP_group(conn: Connection) -> list[str] | None:
-    """
-    Метод для получения из LDAP списка логинов всех пользователей, которые являются студентами. Возвращает None,
-    если что-то пошло не так
-    """
-    # todo Возвращаем список всех студентов (по полю uid из группы LDAP_STUDENTS_GROUP_NAME)
-    res = conn.search(
-        search_base="cn=LEARNING,ou=groups,dc=ams,dc=ulstu,dc=ru",
+def _paging_load_students_from_LDAP_group(conn: Connection, handler, page_size: int = 100) -> str:
+    res = ""
+    _ = conn.search(
+        search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
         search_filter="(memberUid=*)",
         search_scope=SUBTREE,
-        attributes=['memberUid']
+        attributes=['memberUid'],
+        paged_size=page_size
     )
 
-    return conn.entries[0].memberUid
+    res += handler(conn, conn.response[0]['attributes']['memberUid'], False)
+    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    with cookie:
+        _ = conn.search(
+            search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
+            search_filter="(memberUid=*)",
+            search_scope=SUBTREE,
+            attributes=['memberUid'],
+            paged_size=page_size,
+            paged_cookie=cookie
+        )
+
+        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+        res += handler(conn, conn.response[0]['attributes']['memberUid'], False)
+    return res
 
 
-def _load_teachers_from_LDAP_group(conn: Connection) -> list[str] | None:
-    """
-    Метод для получения из LDAP списка логинов всех пользователей, которые являются преподавателями. Возвращает None,
-    если что-то пошло не так
-    """
-    # todo Возвращаем список всех препожавателей (по полю uid из группы LDAP_TEACHERS_GROUP_NAME)
-    res = conn.search(
-        search_base="cn=WORKING,ou=groups,dc=ams,dc=ulstu,dc=ru",
+def _paging_load_teachers_from_LDAP_group(conn: Connection, handler, page_size: int = 100) -> str:
+    res = ""
+    _ = conn.search(
+        search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
         search_filter="(memberUid=*)",
         search_scope=SUBTREE,
-        attributes=['memberUid']
+        attributes=['memberUid'],
+        paged_size=page_size
     )
 
-    return conn.entries[0].memberUid
+    res += handler(conn, conn.response[0]['attributes']['memberUid'], True)
+    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    with cookie:
+        _ = conn.search(
+            search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
+            search_filter="(memberUid=*)",
+            search_scope=SUBTREE,
+            attributes=['memberUid'],
+            paged_size=page_size,
+            paged_cookie=cookie
+        )
 
+        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+        res += handler(conn, conn.response[0]['attributes']['memberUid'], True)
+    return res
 
 def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
     """
@@ -76,7 +97,27 @@ def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
         attributes=["cn"]
     )
     # todo Проверить, что мы получили ответ и что он успешный... Если нет - return None
-    name: str = conn.entries[0].cn  # todo Получить имя из ответа(я не знаю, как конкретно это сделать, ибо не вижу структуры.
+    name: str = conn.entries[0].cn
+    if name is not None and name != "":
+        return name
+    return None
+
+
+def _load_studying_group_name_from_LDAP(conn: Connection, username: str) -> str | None:
+    """
+    Получает имя грацппы студента по его логину.
+    Реализация примерная, на основе теоретических знаний.
+    Если имени не удалось получить - возвращаем None
+    """
+    # todo Может быть сюда try -expect ???
+    conn.search(
+        search_base=f'uid={username},ou={LDAP_ACCOUNT_OU},dc={LDAP_BASE_DOMAIN}',
+        search_filter='(objectClass=ulstuCourse)',
+        search_scope=SUBTREE,
+        attributes=["groupName"]
+    )
+    # todo Проверить, что мы получили ответ и что он успешный... Если нет - return None
+    name: str = conn.entries[0].groupName
     if name is not None and name != "":
         return name
     return None
@@ -91,10 +132,22 @@ def _synch_single_user(conn: Connection, username: str, is_teacher: bool) -> str
     """
     try:
         full_user_name: str = _load_full_name_from_LDAP(conn, username)
+        user_group_name: str | None = None
+        if not is_teacher:
+            user_group_name = _load_studying_group_name_from_LDAP(conn, username)
         if full_user_name is None:
             return f"cannot load full name for user {username}"
 
         user = User.objects.filter(username=username).first()
+
+        if not is_teacher and user_group_name is not None:
+            group = UniGroup.objects.filter(name=user_group_name).first()
+
+            if group is None:
+                group = UniGroup(
+                    name=user_group_name
+                )
+                group.save()
 
         if user is not None:
             res = ""
@@ -105,6 +158,10 @@ def _synch_single_user(conn: Connection, username: str, is_teacher: bool) -> str
             if user.is_teacher != is_teacher:
                 user.is_teacher = is_teacher
                 res += f"is teacher changed to {is_teacher} "
+
+            if not is_teacher and user.uni_group != group and group is not None:
+                user.uni_group = group
+                res += f"student group changed to {user_group_name} "
 
             user.is_present = True
             user.save()
@@ -118,6 +175,8 @@ def _synch_single_user(conn: Connection, username: str, is_teacher: bool) -> str
                 full_name=full_user_name,
                 is_teacher=is_teacher
             )
+            if not is_teacher:
+                user.uni_group = group
             user.save()
             return f"new {username}"
     except Exception as e:
@@ -161,8 +220,8 @@ def synchronise(admin_login: str, admin_password: str) -> str:
                 _prepare_database()
 
                 res: str = ""
-                res += f"Students:\n{_synch_user(conn, _load_students_from_LDAP_group(conn), False)}"
-                res += f"Teachers:\n{_synch_user(conn, _load_teachers_from_LDAP_group(conn), True)}"
+                res += f"Students:\n{_paging_load_students_from_LDAP_group(conn,_synch_user)}"
+                res += f"Teachers:\n{_paging_load_teachers_from_LDAP_group(conn,_synch_user)}"
 
                 _database_after_clear()
                 return res
@@ -176,7 +235,8 @@ def synchronise(admin_login: str, admin_password: str) -> str:
 
 
 if __name__ == '__main__':
-    with Connection(LDAP_HOST_NAME,
-                    user=f'',
-                    password='', check_names=True) as conn:
-        _load_students_from_LDAP_group(conn)
+    pass
+    # with Connection(LDAP_HOST_NAME,
+    #                 user=f'',
+    #                 password='', check_names=True) as conn:
+    #     _load_students_from_LDAP_group(conn)
