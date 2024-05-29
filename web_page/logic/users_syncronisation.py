@@ -41,19 +41,19 @@ def _paging_load_students_from_LDAP_group(conn: Connection, handler, page_size: 
     )
 
     res += handler(conn, conn.response[0]['attributes']['memberUid'], False)
-    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-    with cookie:
-        _ = conn.search(
-            search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
-            search_filter="(memberUid=*)",
-            search_scope=SUBTREE,
-            attributes=['memberUid'],
-            paged_size=page_size,
-            paged_cookie=cookie
-        )
-
-        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-        res += handler(conn, conn.response[0]['attributes']['memberUid'], False)
+    # cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    # with cookie:
+    #     _ = conn.search(
+    #         search_base=f"cn={LDAP_STUDENTS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
+    #         search_filter="(memberUid=*)",
+    #         search_scope=SUBTREE,
+    #         attributes=['memberUid'],
+    #         paged_size=page_size,
+    #         paged_cookie=cookie
+    #     )
+    #
+    #     cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    #     res += handler(conn, conn.response[0]['attributes']['memberUid'], False)
     return res
 
 
@@ -68,19 +68,19 @@ def _paging_load_teachers_from_LDAP_group(conn: Connection, handler, page_size: 
     )
 
     res += handler(conn, conn.response[0]['attributes']['memberUid'], True)
-    cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-    with cookie:
-        _ = conn.search(
-            search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
-            search_filter="(memberUid=*)",
-            search_scope=SUBTREE,
-            attributes=['memberUid'],
-            paged_size=page_size,
-            paged_cookie=cookie
-        )
-
-        cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
-        res += handler(conn, conn.response[0]['attributes']['memberUid'], True)
+    # cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    # with cookie:
+    #     _ = conn.search(
+    #         search_base=f"cn={LDAP_TEACHERS_GROUP_NAME},ou={LDAP_GROUP_OU},dc={LDAP_BASE_DOMAIN}",
+    #         search_filter="(memberUid=*)",
+    #         search_scope=SUBTREE,
+    #         attributes=['memberUid'],
+    #         paged_size=page_size,
+    #         paged_cookie=cookie
+    #     )
+    #
+    #     cookie = conn.result['controls']['1.2.840.113556.1.4.319']['value']['cookie']
+    #     res += handler(conn, conn.response[0]['attributes']['memberUid'], True)
     return res
 
 def _load_full_name_from_LDAP(conn: Connection, username: str) -> str | None:
