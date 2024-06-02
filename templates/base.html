@@ -23,8 +23,11 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav ms-md-auto">
-                <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'courses' %}">Список курсов</a></li>
+                {% if request.user.uni_group is not none %}
+                <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'courses' %}">Назначенные курсы</a></li>
+                {% endif %}
                 {% if request.user.is_teacher %}
+                <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'created_courses' %}">Созданные курсы</a></li>
                 <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'create_course' %}">Создать курс</a></li>
                 <li class="nav-item"><a class="nav-link text-light text-decoration-underline text-center" href="{% url 'groups_list' %}">Список групп</a></li>
                 {% endif %}
