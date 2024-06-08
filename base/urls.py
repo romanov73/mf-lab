@@ -38,6 +38,7 @@ urlpatterns = [
     path('course/<int:course_id>/task/editor', task_editor.task_editor, kwargs={"task_id": None}, name='create_task'),
     path('course/<int:course_id>/task/<int:task_id>/editor', task_editor.task_editor, name='edit_task'),
     path('courses/', web_page.views.course_list, name='courses'),
+    path('courses/created', web_page.views.created_course_list, name='created_courses'),
     path('course/<int:course_id>', web_page.views.course_page, name='course'),
     path('course/<int:course_id>/tasks', web_page.views.task_list, name='course-tasks'),
     path('task/<int:task_id>', web_page.views.task_page, name='task'),
