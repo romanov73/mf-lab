@@ -17,11 +17,8 @@ def index(request):
 @login_required
 def course_list(request):
     name = request.GET.get('name')
-    if name and request.user.is_teacher:
-        courses = Course.objects.filter(name__icontains=name).filter(user=request.user).all()
-    elif request.user.is_teacher:
-        courses = Course.objects.filter(user=request.user).all()
-    elif name:
+
+    if name:
         courses = Course.objects.filter(uni_groups__name=request.user.uni_group).filter(name__icontains=name).all()
     else:
         courses = Course.objects.filter(uni_groups__name=request.user.uni_group).all()
@@ -38,6 +35,31 @@ def course_list(request):
         courses_page = paginator.page(paginator.num_pages)
 
     return render(request, 'course_list.html', {'courses': courses_page, 'user': request.user})
+
+
+@login_required
+@for_teacher()
+def created_course_list(request):
+    name = request.GET.get('name')
+
+    if name:
+        courses = Course.objects.filter(name__icontains=name).filter(user=request.user).all()
+    else:
+        courses = Course.objects.filter(user=request.user).all()
+
+    courses_per_page = 5
+    paginator = Paginator(courses, courses_per_page)
+
+    page = request.GET.get('page')
+    try:
+        courses_page = paginator.page(page)
+    except PageNotAnInteger:
+        courses_page = paginator.page(1)
+    except EmptyPage:
+        courses_page = paginator.page(paginator.num_pages)
+
+    return render(request, 'created_course_list.html', {'courses': courses_page, 'user': request.user})
+
 
 
 @login_required
@@ -102,7 +124,6 @@ def delete_group(request, group_id, **kwargs):
 
 
 @login_required
-@for_student()
 def course_page(request, course_id: int):
     course = get_object_or_404(Course, id=course_id)
     tasks = Task.objects.filter(course_id=course_id)
