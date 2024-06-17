@@ -61,11 +61,17 @@ def created_course_list(request):
     return render(request, 'created_course_list.html', {'courses': courses_page, 'user': request.user})
 
 
-
 @login_required
 @for_teacher()
 def groups_list(request):
-    groups = UniGroup.objects.all()
+    name = request.GET.get('name')
+
+    if name:
+        groups = UniGroup.objects.filter(name__icontains=name)
+    else:
+        groups = UniGroup.objects.all()
+
+    groups = groups.order_by('name')
 
     groups_per_page = 10
     paginator = Paginator(groups, groups_per_page)
