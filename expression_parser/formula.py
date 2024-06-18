@@ -50,6 +50,8 @@ class Formula:
 
         """
         try:
+            if formula.index("=") != -1:
+                raise Exception
             ast.parse(formula)
             return None
         except SyntaxError as se:
