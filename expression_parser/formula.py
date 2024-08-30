@@ -18,6 +18,7 @@ class Formula:
         Args:
             expression (str): Текст формулы, которую пытаемся вычислить.
         """
+        self.res_variables: str|None = None
         expression = self._preprocess_formula(expression)
         error_position: int = self._formula_validation(expression)
         self.error_text = None
@@ -49,6 +50,9 @@ class Formula:
             int: Начальная позиция ошибки. В случае, если валидация успешная - возвращаем None
 
         """
+        if formula is None:
+            return 0
+
         try:
             ast.parse(formula)
             return None
@@ -57,7 +61,7 @@ class Formula:
         except Exception:
             raise
 
-    def _preprocess_formula(self, formula_str: str) -> str:
+    def _preprocess_formula(self, formula_str: str) -> str|None:
         """
         Метод для предобработки текста формулы. Пока тут только перевод стандартного изображения степени(^) в
         варианта python (**)
@@ -68,6 +72,13 @@ class Formula:
         Returns:
             str: Текст формулы после обработки
         """
+        parts = formula_str.split("=")
+        if len(parts) == 2:
+            self.res_variables = parts[0]
+            formula_str = parts[1]
+        elif len(parts) != 1:
+            return None
+
         return formula_str.replace("^", "**")
 
     def _extract_all_variable(self) -> dict[str, float] | None:
@@ -82,7 +93,7 @@ class Formula:
         try:
             return {i[0]: None for i in regex.findall(
                 r'(\b[a-zA-Z]\w*\b(?!\s*[\(\"])(\[(?:[^\[\]]|(?2))*\])?)',
-                self.expression,
+                self.expression.split("=")[-1],
                 overlapped=True)}
         except Exception as ex:
             self.error_text = str(ex)
@@ -125,3 +136,4 @@ class Formula:
         for i in variables.keys():
             if i in self._variables.keys():
                 self._variables[i] = variables[i]
+
