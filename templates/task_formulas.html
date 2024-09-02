@@ -19,7 +19,7 @@
     </form>
     <div class="col"></div>
     <button id="get-v-btn" class="btn btn-primary col-2 me-2">Получить переменные</button>
-    <button id="save-btn" class="btn btn-primary col-4 col-md-2">
+    <button id="save-btn" class="btn btn-primary col-4 col-md-2" {% if has_empty %} disabled {% endif %}>
         Сохранить
     </button>
 </div>

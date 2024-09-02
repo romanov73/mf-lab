@@ -188,7 +188,8 @@ def formula_extract_variables(request, task_id: int, **kwargs):
             return redirect(json.loads(request.body)['next'])
 
         for formula, expression in zip(task.formula_set.all(), formulas.formulas):
-            formula.expression = expression.res_variables + '=' + expression.expression
+            if expression.res_variables is not None:
+                formula.expression = expression.res_variables + '=' + expression.expression
             formula.save()
 
         variables = set(formulas.variables)
@@ -251,6 +252,7 @@ def task_formulas(request, task_id: int):
                   {
                       'formulas': task.formula_set.all(),
                       'variables': task.variable_set.all(),
+                      'has_empty': '' in map(lambda x: x.expression, task.formula_set.all()),
                       'task_id': task.id
                   }
                   )
