@@ -18,6 +18,7 @@
         </button>
     </form>
     <div class="col"></div>
+    <button id="get-v-btn" class="btn btn-primary col-2 me-2">Получить переменные</button>
     <button id="save-btn" class="btn btn-primary col-4 col-md-2">
         Сохранить
     </button>
@@ -33,67 +34,66 @@
                     <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash bi"></i></button>
                 </form>
             </div>
-            <div class="row mt-1">
-                <form action="{% url 'task_formula_extract' task_id=task_id formula_id=formula.id %}" method="post" class="col input-group">
-                    {% csrf_token %}
-                    <input hidden name="next" value="{{ request.path }}" />
-                    <input name="expression" value="{{ formula.expression }}" class="form-control" />
-                    <button class="btn btn-primary" type="submit">Получить переменные</button>
-                </form>
+            <div class="row my-2">
+                <div class="col input-group">
+                    <input name="expression" id="{{ formula.id }}" value="{{ formula.expression }}" class="form-control" />
+                </div>
             </div>
-            <div class="row mt-3">
-                {% for variable in formula.variable_set.all %}
-                <div class="col-12 col-sm-4 text-center border" id="variable-{{ variable.id }}">
-                    <div class="row p-2">
-                        <div class="col-4">
-                            <h3>{{ variable.name }}</h3>
-                        </div>
-                        <div class="col">
-                            <div class="row">
-                                <select class="form-select" id="variable-type-{{ variable.id }}-formula-{{ formula.id }}">
-                                    <option value="exact" {% if variable.mapping_set.count == 0 %} selected {% endif %}>Ввод значения</option>
-                                    <option value="selectable" {% if variable.mapping_set.count > 0 %} selected {% endif %}>Выбор из списка</option>
-                                </select>
-                            </div>
-                        </div>
+        </div>
+    </div>
+{% endfor %}
+
+<div class="row mt-3">
+    {% for variable in variables %}
+    <div class="col-12 col-sm-4 text-center border" id="variable-{{ variable.id }}">
+        <div class="row p-2">
+            <div class="col-4">
+                <h3>{{ variable.name }}</h3>
+            </div>
+            <div class="col">
+                <div class="row">
+                    <select class="form-select" id="variable-type-{{ variable.id }}">
+                        <option value="exact" {% if variable.mapping_set.count == 0 %} selected {% endif %}>Ввод значения</option>
+                        <option value="selectable" {% if variable.mapping_set.count > 0 %} selected {% endif %}>Выбор из списка</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col" id="mapping-variable-{{ variable.id }}" {% if variable.mapping_set.count == 0 %} hidden {% endif %}>
+                <div class="row text-start">
+                    <h6>Пары ключ-значение:</h6>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-5">
+                        <input placeholder="Ключ" class="form-control" id="key-variable-{{ variable.id }}" />
                     </div>
-                    <div class="row">
-                        <div class="col" id="mapping-variable-{{ variable.id }}" {% if variable.mapping_set.count == 0 %} hidden {% endif %}>
-                            <div class="row text-start">
-                                <h6>Пары ключ-значение:</h6>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-5">
-                                    <input placeholder="Ключ" class="form-control" id="key-variable-{{ variable.id }}" />
-                                </div>
-                                <div class="col-5">
-                                    <input pattern="[0-9]+([\.,][0-9]+)?" placeholder="Значение" class="form-control" id="value-variable-{{ variable.id }}" />
-                                </div>
-                                <div class="col-2">
-                                    <button class="btn btn-success" id="add-key-value-pair-btn" data-variable-id="{{ variable.id }}">+</button>
-                                </div>
-                            </div>
-                            {% for mapping in variable.mapping_set.all %}
-                            <div class="row text-start pair">
-                                <div class="col text-center">
-                                    <h6>{{ mapping.key }}</h6>
-                                </div>
-                                <div class="col text-end">
-                                    <h6>{{ mapping.value }}</h6>
-                                </div>
-                                <div class="col text-end">
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deletePair(this)"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+                    <div class="col-5">
+                        <input pattern="[0-9]+([\.,][0-9]+)?" placeholder="Значение" class="form-control" id="value-variable-{{ variable.id }}" />
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-success" id="add-key-value-pair-btn" data-variable-id="{{ variable.id }}">+</button>
+                    </div>
+                </div>
+                {% for mapping in variable.mapping_set.all %}
+                <div class="row text-start pair">
+                    <div class="col text-center">
+                        <h6>{{ mapping.key }}</h6>
+                    </div>
+                    <div class="col text-end">
+                        <h6>{{ mapping.value }}</h6>
+                    </div>
+                    <div class="col text-end">
+                        <button class="btn btn-outline-danger btn-sm" onclick="deletePair(this)"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
     </div>
-{% endfor %}
+    {% endfor %}
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -164,6 +164,22 @@
             }
           });
         });
+        
+        document.getElementById('get-v-btn').addEventListener('click', () => {
+            const expressions = document.querySelectorAll('input[name="expression"]');
+
+            fetch(
+                "{% url 'task_formula_extract' task_id=task_id %}",
+                {
+                    method: "POST",
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        "ContentType": "application/json"
+                    },
+                    body: JSON.stringify({"formulas": Array.from(expressions).map(x => x.value), "next": "{{ request.path }}"})
+                }
+            ).then(response => window.location.reload())
+        })
 
         document.getElementById('save-btn').addEventListener('click', () => {
             const variables = []

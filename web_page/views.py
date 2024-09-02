@@ -1,3 +1,5 @@
+import json
+
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -5,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from json import loads
 from frc import DocxReport
 from web_page.models import Course, Formula, Variable, Task, Mapping, File, UniGroup, User
-from expression_parser import Formula as Expression  # Да простит меня Бог
+from expression_parser.FormulaPackage import FormulaPackage
 from web_page.utils import for_student, for_teacher
 
 
@@ -174,26 +176,35 @@ def task_page(request, task_id: int, **kwargs):
 
 @login_required
 @for_teacher()
-def formula_extract_variables(request, formula_id: int, **kwargs):
+def formula_extract_variables(request, task_id: int, **kwargs):
     if request.method == 'POST':
-        formula = get_object_or_404(Formula, id=formula_id)
-        expression = Expression(request.POST.get('expression'))  # Это Formula из пакета с парсером, но имя Expression
+        task = get_object_or_404(Task, id=task_id)
+        if not request.POST.get('next'):
+            formulas = FormulaPackage(json.loads(request.body)['formulas'])
+        else:
+            formulas = FormulaPackage(list(map(lambda x: x.expression, Formula.objects.all())))
 
-        if expression is None:
-            return redirect(request.POST.get('next'))
+        if formulas.error_text is not None:
+            return redirect(json.loads(request.body)['next'])
 
-        formula.expression = expression.expression
-        variables = set(expression.variables)
+        for formula, expression in zip(task.formula_set.all(), formulas.formulas):
+            formula.expression = expression.res_variables + '=' + expression.expression
+            formula.save()
 
-        Variable.objects.filter(formula_id=formula_id).exclude(name__in=list(variables)).delete()
-        stored = set(map(lambda v: v.name, Variable.objects.filter(formula_id=formula_id).all()))
+        variables = set(formulas.variables)
+
+        Variable.objects.filter(task_id=task_id).exclude(name__in=list(variables)).delete()
+        stored = set(map(lambda v: v.name, Variable.objects.filter(task_id=task_id).all()))
 
         for variable in variables - stored:
-            Variable(name=variable, formula_id=formula_id).save()
+            Variable(name=variable, task_id=task_id).save()
 
-        formula.save()
+        task.save()
 
-        return redirect(request.POST.get('next'))
+        if next_page := request.POST.get('next'):
+            return redirect(next_page)
+        else:
+            return redirect(json.loads(request.body)['next'])
 
 
 @login_required
@@ -210,9 +221,9 @@ def task_create_formula(request, task_id: int):
 @for_teacher()
 def task_delete_formula(request, formula_id: int, **kwargs):
     if request.method == 'POST':
-        get_object_or_404(Formula, id=formula_id).delete()
-
-        return redirect(request.POST.get('next'))
+        formula = get_object_or_404(Formula, id=formula_id)
+        formula.delete()
+        return formula_extract_variables(request, int(formula.task_id))
 
 
 @login_required
@@ -220,7 +231,7 @@ def task_delete_formula(request, formula_id: int, **kwargs):
 def task_formulas_mapping(request, task_id: int, **kwargs):
     if request.method == 'POST':
         variables = loads(request.body.decode('utf-8'))
-        Mapping.objects.filter(variable__formula__task_id=task_id).delete()
+        Mapping.objects.filter(variable__task_id=task_id).delete()
         for variable in variables:
             Mapping.objects.bulk_create(
                 (Mapping(key=mapping['key'], value=mapping['value'], variable_id=variable['id'])
@@ -239,6 +250,7 @@ def task_formulas(request, task_id: int):
                   'task_formulas.html',
                   {
                       'formulas': task.formula_set.all(),
+                      'variables': task.variable_set.all(),
                       'task_id': task.id
                   }
                   )
@@ -249,9 +261,11 @@ def task_formulas(request, task_id: int):
 def task_practice(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     formulas = task.formula_set.all()
+    variables = task.variable_set.all()
     context = {
         'task': task,
         'formulas': formulas,
+        'variables': variables
     }
     return render(request, 'task_practice.html', context)
 
@@ -262,24 +276,37 @@ def task_get_report(request, task_id: int):
     if request.method == 'POST':
         task = get_object_or_404(Task, id=task_id)
         formulas = []
-        data = {'data': formulas}
+        variables = []
+        data = {'data': {'formulas': formulas, 'variables': variables}}
 
-        for formula in task.formula_set.all():
-            expression = Expression(formula.expression)
-            variables = {
-                variable.name: float(request.POST.get(str(variable.id)))
-                for variable in formula.variable_set.all()
+        package = FormulaPackage(list(map(lambda x: x.expression, task.formula_set.all())))
+
+        variables.extend(
+            {
+                "name": variable.name,
+                "value": float(request.POST.get(str(variable.id)))
             }
-            expression.set_variables(variables)
-            formulas.append({
-                'variables': [{
-                    'name': name,
-                    'value': value
-                } for name, value in variables.items()],
-                'formula': formula.expression,
-                'result': expression.calculate_result()
-            })
+            for variable in task.variable_set.all()
+        )
+
+        package.set_variables(
+            {
+                variable['name']: variable['value']
+                for variable in variables
+            }
+        )
+
+        formulas_results = package.calculate()
+
+        formulas.extend([
+            {
+                'expression': formula.expression,
+                'result': formulas_results[formula.expression.split('=')[0].strip()]
+            }
+            for formula in task.formula_set.all()
+        ])
 
         report = DocxReport()
         report.render(data)
+
         return HttpResponse(report.get_bytes_array())

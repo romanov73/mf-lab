@@ -54,7 +54,7 @@ class Formula(models.Model):
 class Variable(models.Model):
     name = models.CharField(max_length=10)
 
-    formula = models.ForeignKey(Formula, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
 
 
 class Mapping(models.Model):
