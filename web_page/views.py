@@ -279,7 +279,7 @@ def task_get_report(request, task_id: int):
         task = get_object_or_404(Task, id=task_id)
         formulas = []
         variables = []
-        data = {'data': {'formulas': formulas, 'variables': variables}}
+        data = {'variables': variables, 'formulas': formulas}
 
         package = FormulaPackage(list(map(lambda x: x.expression, task.formula_set.all())))
 
