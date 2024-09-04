@@ -74,8 +74,8 @@ class Formula:
         """
         parts = formula_str.split("=")
         if len(parts) == 2:
-            self.res_variables = parts[0]
-            formula_str = parts[1]
+            self.res_variables = parts[0].strip()
+            formula_str = parts[1].strip()
         elif len(parts) != 1:
             return None
 
