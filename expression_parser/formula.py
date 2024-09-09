@@ -75,7 +75,7 @@ class Formula:
         parts = formula_str.split("=")
         if len(parts) == 2:
             self.res_variables = parts[0].replace(" ", "")
-            formula_str = parts[1][parts[1].find(" ")+1:]
+            formula_str = parts[1][regex.finditer("^\s*\S", parts[1]).search().end()-1:]
         elif len(parts) != 1:
             return None
 
