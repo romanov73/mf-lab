@@ -18,7 +18,7 @@ class Formula:
         Args:
             expression (str): Текст формулы, которую пытаемся вычислить.
         """
-        self.res_variables: str|None = None
+        self.res_variables: str | None = None
         expression = self._preprocess_formula(expression)
         error_position: int = self._formula_validation(expression)
         self.error_text = None
@@ -61,7 +61,7 @@ class Formula:
         except Exception:
             raise
 
-    def _preprocess_formula(self, formula_str: str) -> str|None:
+    def _preprocess_formula(self, formula_str: str) -> str | None:
         """
         Метод для предобработки текста формулы. Пока тут только перевод стандартного изображения степени(^) в
         варианта python (**)
@@ -75,7 +75,7 @@ class Formula:
         parts = formula_str.split("=")
         if len(parts) == 2:
             self.res_variables = parts[0].replace(" ", "")
-            formula_str = parts[1][regex.finditer("^\s*\S", parts[1]).search().end()-1:]
+            formula_str = parts[1][regex.finditer("^\s*\S", parts[1]).search().end() - 1:]
         elif len(parts) != 1:
             return None
 
@@ -136,4 +136,3 @@ class Formula:
         for i in variables.keys():
             if i in self._variables.keys():
                 self._variables[i] = variables[i]
-
