@@ -8,18 +8,19 @@ from schema import Schema, Or, SchemaError
 
 TEMPLATE_PATH = Path(__file__).parent / "report_templates" / "Template.docx"
 
-"""Требуемый формат данных для построения отчетов"""
 CONTEXT_SCHEMA = Schema({
-    "data": [{
-        'variables': [
-            {
-                "name": str,
-                "value": Or(int, float)
-            }
-        ],
-        "formula": str,
-        "result": Or(str, int, float)
-    }]
+    'variables': [
+        {
+            "name": str,
+            "value": Or(int, float)
+        }
+    ],
+    "formulas": [
+        {
+            "expression": str,
+            "result": Or(str, int, float)
+        }
+    ],
 })
 
 
@@ -39,7 +40,6 @@ class DocxReport(DocxTemplate):
             raise SchemaError("Неправильный формат данных")
 
         super().render(context, jinja_env, autoescape)
-
 
     def get_bytes_array(self):
         file_stream = io.BytesIO()

@@ -16,31 +16,31 @@
                     <div class="row mt-2">
                         <h5 class="col text-start">Формула: {{ formula.expression }}</h5>
                     </div>
-                    <div class="row mt-3">
-                        {% for variable in formula.variable_set.all %}
-                        <div class="col-12 col-sm-4 text-center border">
-                            <div class="row p-2">
-                                <div class="col-4">
-                                    <h6>{{ variable.name }}:</h6>
-                                </div>
-                                <div class="col-8">
-                                    {% if variable.mapping_set.count > 0 %}
-                                    <select class="form-select" name="{{ variable.id }}">
-                                        {% for mapping in variable.mapping_set.all %}
-                                        <option value="{{ mapping.value }}">{{ mapping.key }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {% else %}
-                                    <input type="number" step="any" class="form-control" name="{{ variable.id }}" required>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
                 </div>
             </div>
             {% endfor %}
+            <div class="row mt-3">
+                {% for variable in task.variable_set.all %}
+                <div class="col-12 col-sm-4 text-center border">
+                    <div class="row p-2">
+                        <div class="col-4">
+                            <h6>{{ variable.name }}:</h6>
+                        </div>
+                        <div class="col-8">
+                            {% if variable.mapping_set.count > 0 %}
+                            <select class="form-select" name="{{ variable.id }}">
+                                {% for mapping in variable.mapping_set.all %}
+                                <option value="{{ mapping.value }}">{{ mapping.key }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="number" step="any" class="form-control" name="{{ variable.id }}" required>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
             <div class="row my-4">
                 <div class="col text-center">
                     <button type="submit" class="btn btn-primary" id="get-report-btn">Получить отчет</button>
