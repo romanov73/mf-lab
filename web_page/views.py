@@ -166,7 +166,6 @@ def task_list(request, course_id: int):
 
 
 @login_required
-@for_student()
 def task_page(request, task_id: int, **kwargs):
     task = get_object_or_404(Task, id=task_id)
     files = File.objects.filter(task_id=task_id)
@@ -259,7 +258,6 @@ def task_formulas(request, task_id: int):
 
 
 @login_required
-@for_student()
 def task_practice(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     formulas = task.formula_set.all()
@@ -273,7 +271,6 @@ def task_practice(request, task_id):
 
 
 @login_required
-@for_student()
 def task_get_report(request, task_id: int):
     if request.method == 'POST':
         task = get_object_or_404(Task, id=task_id)
