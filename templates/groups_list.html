@@ -4,6 +4,12 @@
 
 <div class="d-flex mb-3 justify-content-between">
     <span class="d-inline-block fw-bold h5">Группы:</span>
+    <div class="d-inline-block">
+        <form class="d-flex" role="search">
+            <input class="form-control me-2" type="search" placeholder="Поиск" aria-label="Search" name="name">
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </form>
+    </div>
     <a href="{% url 'group_create' %}" class="btn btn-outline-primary">Создать группу</a>
 </div>
 
