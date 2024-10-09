@@ -50,13 +50,13 @@ class MyUserAdmin(UserAdmin):
     list_display = ("username", "first_name", "last_name", "is_teacher")
 
 
-@login_required
-@for_admin()
-def admin_sync(request):
-    from .logic.users_syncronisation import synchronise
-    synchronise(LDAP_ADMIN_DATA["USER"],
-                LDAP_ADMIN_DATA["PASSWORD"])
-    return render(request, 'index.html')
+# @login_required
+# @for_admin()
+# def admin_sync(request):
+#     from .logic.users_syncronisation import synchronise
+#     synchronise(LDAP_ADMIN_DATA["USER"],
+#                 LDAP_ADMIN_DATA["PASSWORD"])
+#     return render(request, 'index.html')
 
 
 admin.site.register(User, MyUserAdmin)
