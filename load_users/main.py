@@ -1,8 +1,10 @@
 import os
+import sys
 import django
 
 
 if __name__ == "__main__":
+    sys.path.append("..")
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'base.settings')
     django.setup()
 
