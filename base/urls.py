@@ -55,6 +55,6 @@ urlpatterns = [
     path('fp/image/', web_page.logic.file_uploader.upload_image, name="upload_image"),
     path('fp/image/<str:name>', web_page.logic.file_uploader.get_image, name="get_image"),
     path('fp/file/<int:file_id>', web_page.logic.file_uploader.get_file, name="get_file"),
-    path("sync", web_page.admin.admin_sync, name="sync")
+    # path("sync", web_page.admin.admin_sync, name="sync")
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
