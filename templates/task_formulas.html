@@ -19,7 +19,7 @@
     </form>
     <div class="col"></div>
     <button id="get-v-btn" class="btn btn-primary col-2 me-2">Получить переменные</button>
-    <button id="save-btn" class="btn btn-primary col-4 col-md-2" {% if has_empty %} disabled {% endif %}>
+    <button id="save-btn" class="btn btn-primary col-4 col-md-2" onclick="SendData()">
         Сохранить
     </button>
 </div>
@@ -43,128 +43,471 @@
     </div>
 {% endfor %}
 
-<div class="row mt-3">
-    {% for variable in variables %}
-    <div class="col-12 col-sm-4 text-center border" id="variable-{{ variable.id }}">
-        <div class="row p-2">
-            <div class="col-4">
-                <h3>{{ variable.name }}</h3>
-            </div>
-            <div class="col">
-                <div class="row">
-                    <select class="form-select" id="variable-type-{{ variable.id }}">
-                        <option value="exact" {% if variable.mapping_set.count == 0 %} selected {% endif %}>Ввод значения</option>
-                        <option value="selectable" {% if variable.mapping_set.count > 0 %} selected {% endif %}>Выбор из списка</option>
-                    </select>
-                </div>
-            </div>
+    <div class="row mt-3" id="area">
+
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-primary" id="group-table">
+            <thead>
+                <tr id="table-header">
+                    <th scope="col" id="group-header-name">Имя</th>
+                    <th scope="col" ><select id="add-new-variable"></select> </th>
+                </tr>
+            </thead>
+            <tbody id="group-body-id">
+                <tr class="" id="adding-value">
+                    <td colspan="2">
+                       <button id="add-new-line">+</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- Область шаблонов -->
+<div class="col-12 col-sm-4 text-center border" id="variable-template" hidden>
+    <div class="row p-2">
+        <div class="col-4">
+            <h3 id="variable-name">placeholder</h3>
         </div>
-        <div class="row">
-            <div class="col" id="mapping-variable-{{ variable.id }}" {% if variable.mapping_set.count == 0 %} hidden {% endif %}>
-                <div class="row text-start">
-                    <h6>Пары ключ-значение:</h6>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5">
-                        <input placeholder="Ключ" class="form-control" id="key-variable-{{ variable.id }}" />
-                    </div>
-                    <div class="col-5">
-                        <input pattern="[0-9]+([\.,][0-9]+)?" placeholder="Значение" class="form-control" id="value-variable-{{ variable.id }}" />
-                    </div>
-                    <div class="col-2">
-                        <button class="btn btn-success" id="add-key-value-pair-btn" data-variable-id="{{ variable.id }}">+</button>
-                    </div>
-                </div>
-                {% for mapping in variable.mapping_set.all %}
-                <div class="row text-start pair">
-                    <div class="col text-center">
-                        <h6>{{ mapping.key }}</h6>
-                    </div>
-                    <div class="col text-end">
-                        <h6>{{ mapping.value }}</h6>
-                    </div>
-                    <div class="col text-end">
-                        <button class="btn btn-outline-danger btn-sm" onclick="deletePair(this)"><i class="bi bi-trash"></i></button>
-                    </div>
-                </div>
-                {% endfor %}
+        <div class="col">
+            <div class="row">
+                <select class="form-select" id="mode-select">
+                    <option value="exact">Ввод значения</option>
+                    <option value="selectable" >Выбор из списка</option>
+                    <option hidden value="global-selectable" id="table-select">Из общей таблицы</option>
+                </select>
             </div>
         </div>
     </div>
-    {% endfor %}
+    <div class="row" id="simple-mapping" hidden>
+        <div class="col" id="mapping-variable">
+            <div class="row text-start">
+                <h6>Пары ключ-значение:</h6>
+            </div>
+            <div class="row mb-2">
+                <div class="col-5">
+                    <input placeholder="Ключ" class="form-control" id="key-variable" />
+                </div>
+                <div class="col-5">
+                    <input pattern="[0-9]+([\.,][0-9]+)?" placeholder="Значение" class="form-control" id="value-variable" />
+                </div>
+                <div class="col-2">
+                    <button class="btn btn-success" id="add-key-value-pair-btn">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row text-start pair" id="select-row-template" hidden>
+    <div class="col text-center">
+        <h6 id="key">key</h6>
+    </div>
+    <div class="col text-end">
+        <h6 id="value">value</h6>
+    </div>
+    <div class="col text-end">
+        <button class="btn btn-outline-danger btn-sm" id="delete-maping"><i class="bi bi-trash"></i></button>
+    </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
     <script>
-        function deletePair(btn) {
-            btn.parentElement.parentElement.remove()
+        const variables = [
+        {% for variable in variables %}
+           {
+               id: "{{ variable.id }}",
+               name: "{{ variable.name }}",
+               element:null,
+               current_type: -1,
+               maping:
+                    {% if variable.mapping_set.count == 0 %}
+                    null
+                    {% else %}
+                   [
+                   {% for mapping in variable.mapping_set.all %}
+                       {
+                           key:"{{ mapping.key }}",
+                           value:"{{ mapping.value }}"
+                       },
+                    {% endfor %}
+                    ]
+           {% endif %}
+           },
+        {% endfor %}
+        ]
+        let groupingVariables = []
+        let simpleVariables = []
+        const simpleVarTemplate = document.getElementById('variable-template');
+        const selectRowTemplate = document.getElementById("select-row-template");
+        const area = document.getElementById('area')
+        const groupTable = document.getElementById("group-table")
+
+        function UpdateDataView(){
+            let tmp = {}
+            variables.filter(x=>x.maping != null).forEach(v=>{
+                let sortedArray = v.maping.map(x=>x.key).sort()
+                if (sortedArray.length >0){
+                    let key = sortedArray.reduce((acc,x)=>`${acc}|${x}`)
+                    if(tmp.hasOwnProperty(key))
+                        tmp[key].push(v.id)
+                    else
+                        tmp[key] = [v.id]
+                }
+            })
+
+            let grouping = Object.keys(tmp).map(function(key) {
+              return [key, tmp[key]];
+            }).sort((x,y)=>y[1].length - x[1].length)[0];
+
+            console.log(grouping)
+
+            variables.filter(x=> grouping==null || grouping[1].indexOf(x.id) === -1).forEach(x=>{
+                if (x.current_type === -1)
+                    x.current_type = x.maping == null ? 0: 1
+            })
+            simpleVariables = variables
+
+
+            groupingVariables = {}
+
+            variables.filter(x=>x.current_type === -1 || x.current_type > 1).forEach(v=>{
+                if (v.current_type === -1)
+                    v.current_type = 2
+                v.maping.forEach(m=>{
+                    if (groupingVariables[m.key] == null)
+                        groupingVariables[m.key] = {}
+
+                    if(groupingVariables[m.key][v.name] == null)
+                        groupingVariables[m.key][v.name] = {
+                            obj:v,
+                            mapping:m
+                        }
+
+                })
+            })
+             DrawSimpleVariables()
+            DrawTable()
+
+            console.log(groupingVariables)
         }
 
-        const dropdowns = document.querySelectorAll('select');
+        function DrawTable(){
 
-        dropdowns.forEach(dropdown => {
-          dropdown.addEventListener('change', () => {
-            const variableId = dropdown.id.split('-')[2];
-            const mappingDiv = document.getElementById(`mapping-variable-${variableId}`);
+            let select = groupTable.querySelector("#add-new-variable")
+            select.innerHTML = "" // Чистим старое
 
-            if (dropdown.value === 'selectable') {
-              mappingDiv.removeAttribute('hidden');
-            } else {
-              mappingDiv.setAttribute('hidden', '');
+            let addNewLine = groupTable.querySelector("#add-new-line")
+            let group_body = groupTable.querySelector("#group-body-id")
+
+            // Удаляем старые строки
+            var count = group_body.children.length
+            for (let i = 0; i < count-1; i++) {
+                group_body.children.item(0).remove()
             }
-          });
-        });
 
-        document.querySelectorAll('#add-key-value-pair-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const variableId = btn.dataset.variableId;
-            const keyInput = document.getElementById(`key-variable-${variableId}`);
-            const valueInput = document.getElementById(`value-variable-${variableId}`);
-            const key = keyInput.value.trim();
-            const value = valueInput.value.trim();
+            // Удаляем старые куски заголовка
+            count = select.parentNode.parentNode.children.length
+            for (let i = 0; i < count-2; i++) {
+                select.parentNode.parentNode.children.item(1).remove()
+            }
 
-            if (!valueInput.checkValidity()) {
+            const addingValue = document.getElementById("adding-value")
+
+            let flag = true;
+            let mappingKeys = []
+
+            for (let [g_key, g_value] of Object.entries(groupingVariables)) {
+                let tr = document.createElement('tr');
+                let td = document.createElement('td')
+
+                td.innerHTML = g_key
+                tr.appendChild(td)
+                td.ondblclick = ()=>{
+                    td.innerHTML = ""
+                    let input = document.createElement('input')
+                    input.value = g_key
+                    td.appendChild(input)
+
+                    input.onchange = () => {
+                        for (let [e_key, e_value] of Object.entries(g_value)){
+                            e_value.obj.maping.filter(x=>x.key === g_key)[0].key = input.value
+                        }
+                        UpdateDataView()
+                    }
+                }
+
+                if(g_key === "null"){
+                    //g_key = ""
+                    td.dispatchEvent(new Event('dblclick'))
+                }
+
+                mappingKeys .push(g_key)
+
+                for (let [e_key, e_value] of Object.entries(g_value)){
+                    if(flag){
+                        let th = document.createElement('th')
+                        th.innerHTML = e_key
+                        select.parentNode.parentNode.insertBefore(th, select.parentNode)
+                    }
+
+                    let td = document.createElement('td')
+
+                    if (e_value.mapping.value === null){
+                        let input = document.createElement('input')
+                        input.setAttribute("type","number")
+                        td.appendChild(input)
+
+                        input.onchange = ()=>{
+                            e_value.mapping.value = input.value
+                            UpdateDataView()
+                        }
+                    }
+                    else{
+                        td.ondblclick = ()=>{
+                            td.innerHTML = ""
+                            let input = document.createElement('input')
+                            input.setAttribute("type","number")
+                            input.value = e_value.mapping.value
+                            td.appendChild(input)
+
+                            input.onchange = ()=> {
+                                e_value.mapping.value = input.value
+                                UpdateDataView()
+                            }
+                        }
+                        td.innerHTML = e_value.mapping.value
+                    }
+
+
+                    tr.appendChild(td)
+                }
+
+                flag = false
+                let etd = document.createElement('td')
+                let del = document.createElement("button")
+                del.setAttribute("class","btn btn-outline-danger")
+                del.innerHTML = "<i class=\"bi bi-trash\"></i>"
+                etd.appendChild(del)
+                del.onclick = () =>{
+                    if(confirm("Вы уверены, что хотите удалить данную строку целиков?")){
+                         for (let [e_key, e_value] of Object.entries(g_value)){
+                             let index = e_value.obj.maping.indexOf(e_value.obj.maping.filter(x=>x.key === g_key)[0])
+
+                            e_value.obj.maping.splice(index, 1)
+                        }
+                        UpdateDataView()
+                    }
+                }
+
+                tr.appendChild(etd)
+                group_body.insertBefore(tr, addingValue)
+                //group_body.appendChild(tr)
+            }
+
+            var opt = document.createElement('option');
+            opt.value = "null";
+            opt.innerHTML = "+";
+            opt.setAttribute("selected",null)
+            select.appendChild(opt);
+
+            variables.filter(x=>x.current_type !== 2).forEach(element=> {
+                opt = document.createElement('option');
+                opt.value = element.id;
+                opt.innerHTML = element.name;
+                select.appendChild(opt);
+            })
+
+            select.onchange = ()=>{
+                if(select.value !== 'null'){
+                    let newVar = variables.filter(x=>x.id === select.value)[0]
+
+                    newVar.current_type = 2
+                    if (newVar.maping == null)
+                        newVar.maping = []
+                    mappingKeys.forEach(x=>{
+                        if(newVar.maping.filter(y=>y.key === x).length===0){
+                            newVar.maping.push({
+                                key:x,
+                                value:null
+                            })
+                        }
+                    })
+                    for (let i = 0; i < newVar.maping.length; i++) {
+                        if(mappingKeys.filter(x=>x === newVar.maping[i].key).length === 0){
+                            newVar.maping.splice(newVar.maping, 1)
+                            i--;
+                        }
+                    }
+
+                    if(newVar.maping.length === 0){
+                        newVar.maping.push({
+                                key:"null",
+                                value:null
+                            })
+                    }
+
+                    UpdateDataView()
+                }
+            }
+
+            let colspan = 2
+            if(mappingKeys.length > 0){
+                colspan += Object.entries(groupingVariables[mappingKeys[0]]).length
+            }
+
+            addNewLine.parentNode.setAttribute("colspan", colspan)
+            addNewLine.onclick = ()=>{
+                if(Object.entries(groupingVariables).length === 0)
+                    return
+
+                for (let [e_key, e_value] of Object.entries(Object.entries(groupingVariables)[0][1])){
+                    e_value.obj.maping.push({
+                        key:"null",
+                        value:null
+                    })
+                }
+                UpdateDataView()
+            }
+        }
+
+        function DrawSimpleVariables(){
+
+            area.innerHTML = ""
+            for (let i = 0; i < simpleVariables.length; i++) {
+                let item = simpleVariables[i]
+                item.element = simpleVarTemplate.cloneNode(true);
+                item.element.removeAttribute("hidden")
+
+                item.element.id = `variable-${item.id}`
+                item.element.querySelector("#variable-name").innerHTML = item.name
+
+                let mappingPanel =  item.element.querySelector("#simple-mapping")
+                let select  = item.element.querySelector("#mode-select");
+
+                switch (item.current_type) {
+                    case 1:
+                        select.value = 'selectable'
+                        select.querySelector("#table-select").setAttribute("hidden",null)
+                        break
+                    case 2:
+                        select.value = 'global-selectable'
+                        select.querySelector("#table-select").removeAttribute("hidden")
+                        break;
+                }
+
+                function MappingModeChange(){
+                   mappingPanel.querySelectorAll("#select-row-template").forEach(element =>element.remove())
+                   if (select.value === 'selectable'){
+
+                       item.current_type = 1
+
+                       mappingPanel.removeAttribute("hidden")
+
+                       if (item.maping!=null){
+                          let vs = mappingPanel.querySelector("#mapping-variable")
+                           item.maping.forEach(maping=>{
+                               let ln = selectRowTemplate.cloneNode(true)
+                               ln.removeAttribute("hidden")
+                               ln.querySelector("#key").innerHTML = maping.key
+                               ln.querySelector("#value").innerHTML = maping.value
+                               vs.appendChild(ln)
+
+                               ln.querySelector("#delete-maping").onclick = () => {
+                                   if(confirm(`Вы уверены, что хотите удалить ${maping.key}?`)){
+                                       item.maping.splice(item.maping.indexOf(item.maping.filter(x=>x.key === maping.key)[0]),1)
+                                       UpdateDataView();
+                                   }
+                               }
+                           })
+                       }
+                   }
+                   else if (select.value === 'global-selectable'){
+                       item.current_type = 2
+                       mappingPanel.setAttribute("hidden",null);
+                   }
+                   else{
+                       item.current_type = 0
+                       mappingPanel.setAttribute("hidden",null);
+                   }
+               }
+                MappingModeChange();
+
+               select.addEventListener('change', ()=> {
+                   MappingModeChange()
+                   UpdateDataView()
+               })
+               mappingPanel.querySelector("#add-key-value-pair-btn").onclick = ()=>{
+                  if(item.maping == null)
+                       item.maping = []
+
+                 let model = {
+                       key: mappingPanel.querySelector("#key-variable").value,
+                       value: mappingPanel.querySelector("#value-variable").value,
+                 }
+
+                  if(item.maping.filter(x=>x.key === model.key).length > 0)
+                      return
+
+                   if(item.maping == null){
+                       item.maping = []
+                   }
+                   item.maping.push(model)
+                   UpdateDataView();
+
+                   mappingPanel.querySelector("#key-variable").value = ""
+                   mappingPanel.querySelector("#value-variable").value = ""
+               }
+
+               area.appendChild(simpleVariables[i].element)
+        }
+
+            console.log(simpleVariables)
+        }
+
+        function SendData(){
+            let data = []
+            let skip = false
+
+            variables.forEach(v=>{
+                if(v.current_type !== 0){
+                    let record = {
+                        id:v.id,
+                        mapping:[]
+                    }
+
+                    v.maping.forEach(m=>{
+                      if(m.key === "null" || m.value == null){
+                        alert("Не все данные заполнены корректно!");
+                        skip = true
+                          return
+                      }
+                      record.mapping.push(m)
+                    })
+                    data.push(record);
+                }
+            })
+
+            if (skip)
                 return
-            }
 
-            if (key && value) {
-              const mappingDiv = document.getElementById(`mapping-variable-${variableId}`);
-              const newRow = document.createElement('div');
-              newRow.classList.add('row', 'text-start', 'pair');
+            fetch(
+                "{% url 'task_formulas_mapping' task_id=task_id %}",
+                {
+                    method: "POST",
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        "ContentType": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                }
+            ).then(response => alert('Изменения успешно сохранены'))
+        }
 
-              const keyCol = document.createElement('div');
-              keyCol.classList.add('col', 'text-center');
-              const keyText = document.createElement('h6');
-              keyText.textContent = key;
-              keyCol.appendChild(keyText);
-
-              const valueCol = document.createElement('div');
-              valueCol.classList.add('col', 'text-end');
-              const valueText = document.createElement('h6');
-              valueText.textContent = value;
-              valueCol.appendChild(valueText);
-
-              const deleteCol = document.createElement('div');
-              deleteCol.classList.add('col', 'text-end');
-              const deleteBtn = document.createElement('button');
-              deleteBtn.classList.add('btn', 'btn-outline-danger', 'btn-sm');
-              deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-              deleteBtn.addEventListener('click', () => newRow.remove());
-              deleteCol.appendChild(deleteBtn);
-
-              newRow.appendChild(keyCol);
-              newRow.appendChild(valueCol);
-              newRow.appendChild(deleteCol);
-
-              mappingDiv.appendChild(newRow);
-              keyInput.value = '';
-              valueInput.value = '';
-            }
-          });
-        });
-        
+        // Вот тут я не трогал. Как было, так и оставил
         document.getElementById('get-v-btn').addEventListener('click', () => {
             const expressions = document.querySelectorAll('input[name="expression"]');
 
@@ -181,37 +524,6 @@
             ).then(response => window.location.reload())
         })
 
-        document.getElementById('save-btn').addEventListener('click', () => {
-            const variables = []
-            dropdowns.forEach(dropdown => {
-                const variableId = dropdown.id.split('-')[2];
-                const mappingDiv = document.getElementById(`mapping-variable-${variableId}`);
-
-                if (dropdown.value === 'selectable') {
-                  const mapping = [];
-                  mappingDiv.querySelectorAll('div.row.text-start.pair').forEach(row => {
-                    const key = row.querySelector('h6').textContent;
-                    const value = row.querySelectorAll('h6')[1].textContent;
-                    mapping.push({ key, value });
-                  });
-
-                  if (mapping.length > 0) {
-                    variables.push({ id: variableId, mapping });
-                  }
-                }
-            });
-
-            fetch(
-                "{% url 'task_formulas_mapping' task_id=task_id %}",
-                {
-                    method: "POST",
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        "ContentType": "application/json"
-                    },
-                    body: JSON.stringify(variables)
-                }
-            ).then(response => alert('Изменения успешно сохранены'))
-        })
+        UpdateDataView()
     </script>
 {% endblock %}
