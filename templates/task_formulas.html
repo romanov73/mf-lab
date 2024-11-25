@@ -47,8 +47,8 @@
 
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-primary" id="group-table">
+    <div class="table-responsive mt-3">
+        <table class="table " id="group-table">
             <thead>
                 <tr id="table-header">
                     <th scope="col" id="group-header-name">Имя</th>
@@ -58,7 +58,7 @@
             <tbody id="group-body-id">
                 <tr class="" id="adding-value">
                     <td colspan="2">
-                       <button id="add-new-line">+</button>
+                       <button class="btn btn-outline-primary" id="add-new-line">+</button>
                     </td>
                 </tr>
             </tbody>
@@ -310,7 +310,7 @@
 
             var opt = document.createElement('option');
             opt.value = "null";
-            opt.innerHTML = "+";
+            opt.innerHTML = "Переменная";
             opt.setAttribute("selected",null)
             select.appendChild(opt);
 
