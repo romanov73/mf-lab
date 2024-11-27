@@ -52,7 +52,7 @@
             <thead>
                 <tr id="table-header">
                     <th scope="col" id="group-header-name">Имя</th>
-                    <th scope="col" ><select id="add-new-variable"></select> </th>
+                    <th scope="col" id="add-new-variable"></th>
                 </tr>
             </thead>
             <tbody id="group-body-id">
@@ -75,7 +75,7 @@
                 <select class="form-select" id="mode-select">
                     <option value="exact">Ввод значения</option>
                     <option value="selectable" >Выбор из списка</option>
-                    <option hidden value="global-selectable" id="table-select">Из общей таблицы</option>
+                    <option value="global-selectable" id="table-select">Из общей таблицы</option>
                 </select>
             </div>
         </div>
@@ -141,6 +141,7 @@
         ]
         let groupingVariables = []
         let simpleVariables = []
+        let mappingKeys = []
         const simpleVarTemplate = document.getElementById('variable-template');
         const selectRowTemplate = document.getElementById("select-row-template");
         const area = document.getElementById('area')
@@ -198,7 +199,6 @@
         function DrawTable(){
 
             let select = groupTable.querySelector("#add-new-variable")
-            select.innerHTML = "" // Чистим старое
 
             let addNewLine = groupTable.querySelector("#add-new-line")
             let group_body = groupTable.querySelector("#group-body-id")
@@ -210,15 +210,15 @@
             }
 
             // Удаляем старые куски заголовка
-            count = select.parentNode.parentNode.children.length
+            count = select.parentNode.children.length
             for (let i = 0; i < count-2; i++) {
-                select.parentNode.parentNode.children.item(1).remove()
+                select.parentNode.children.item(1).remove()
             }
 
             const addingValue = document.getElementById("adding-value")
 
             let flag = true;
-            let mappingKeys = []
+            mappingKeys = []
 
             for (let [g_key, g_value] of Object.entries(groupingVariables)) {
                 let tr = document.createElement('tr');
@@ -245,13 +245,13 @@
                     td.dispatchEvent(new Event('dblclick'))
                 }
 
-                mappingKeys .push(g_key)
+                mappingKeys.push(g_key)
 
                 for (let [e_key, e_value] of Object.entries(g_value)){
                     if(flag){
                         let th = document.createElement('th')
                         th.innerHTML = e_key
-                        select.parentNode.parentNode.insertBefore(th, select.parentNode)
+                        select.parentNode.insertBefore(th, select)
                     }
 
                     let td = document.createElement('td')
@@ -308,52 +308,6 @@
                 //group_body.appendChild(tr)
             }
 
-            var opt = document.createElement('option');
-            opt.value = "null";
-            opt.innerHTML = "Переменная";
-            opt.setAttribute("selected",null)
-            select.appendChild(opt);
-
-            variables.filter(x=>x.current_type !== 2).forEach(element=> {
-                opt = document.createElement('option');
-                opt.value = element.id;
-                opt.innerHTML = element.name;
-                select.appendChild(opt);
-            })
-
-            select.onchange = ()=>{
-                if(select.value !== 'null'){
-                    let newVar = variables.filter(x=>x.id === select.value)[0]
-
-                    newVar.current_type = 2
-                    if (newVar.maping == null)
-                        newVar.maping = []
-                    mappingKeys.forEach(x=>{
-                        if(newVar.maping.filter(y=>y.key === x).length===0){
-                            newVar.maping.push({
-                                key:x,
-                                value:null
-                            })
-                        }
-                    })
-                    for (let i = 0; i < newVar.maping.length; i++) {
-                        if(mappingKeys.filter(x=>x === newVar.maping[i].key).length === 0){
-                            newVar.maping.splice(newVar.maping, 1)
-                            i--;
-                        }
-                    }
-
-                    if(newVar.maping.length === 0){
-                        newVar.maping.push({
-                                key:"null",
-                                value:null
-                            })
-                    }
-
-                    UpdateDataView()
-                }
-            }
-
             let colspan = 2
             if(mappingKeys.length > 0){
                 colspan += Object.entries(groupingVariables[mappingKeys[0]]).length
@@ -391,17 +345,18 @@
                 switch (item.current_type) {
                     case 1:
                         select.value = 'selectable'
-                        select.querySelector("#table-select").setAttribute("hidden",null)
                         break
                     case 2:
                         select.value = 'global-selectable'
-                        select.querySelector("#table-select").removeAttribute("hidden")
                         break;
                 }
 
                 function MappingModeChange(){
                    mappingPanel.querySelectorAll("#select-row-template").forEach(element =>element.remove())
                    if (select.value === 'selectable'){
+
+                       if(item.maping !== null && item.maping.values().some(x=>x.value == null))
+                          item.maping = null
 
                        item.current_type = 1
 
@@ -426,8 +381,38 @@
                        }
                    }
                    else if (select.value === 'global-selectable'){
-                       item.current_type = 2
-                       mappingPanel.setAttribute("hidden",null);
+                        if(item.current_type !== 2){
+                            item.current_type = 2
+                           //mappingPanel.setAttribute("hidden",null);
+
+                           let newVar = item;
+
+                            if (newVar.maping == null)
+                                newVar.maping = []
+                            mappingKeys.forEach(x=>{
+                                if(newVar.maping.filter(y=>y.key === x).length===0){
+                                    newVar.maping.push({
+                                        key:x,
+                                        value:null
+                                    })
+                                }
+                            })
+                            for (let i = 0; i < newVar.maping.length; i++) {
+                                if(mappingKeys.filter(x=>x === newVar.maping[i].key).length === 0){
+                                    newVar.maping.splice(newVar.maping, 1)
+                                    i--;
+                                }
+                            }
+
+                            if(newVar.maping.length === 0){
+                                newVar.maping.push({
+                                        key:"null",
+                                        value:null
+                                    })
+                            }
+
+                            UpdateDataView()
+                        }
                    }
                    else{
                        item.current_type = 0
@@ -519,7 +504,11 @@
                         'X-CSRFToken': '{{ csrf_token }}',
                         "ContentType": "application/json"
                     },
-                    body: JSON.stringify({"formulas": Array.from(expressions).map(x => x.value), "next": "{{ request.path }}"})
+                    body: JSON.stringify(
+                        {
+                            "formulas": Array.from(expressions).map(x => x.value),
+                            "next": "{{ request.path }}"
+                        })
                 }
             ).then(response => window.location.reload())
         })
