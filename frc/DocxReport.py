@@ -21,6 +21,7 @@ CONTEXT_SCHEMA = Schema({
             "result": Or(str, int, float)
         }
     ],
+    "global_tables": dict,
 })
 
 
