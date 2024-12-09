@@ -282,9 +282,12 @@ def task_get_report(request, task_id: int):
         task = get_object_or_404(Task, id=task_id)
         formulas = []
         variables = []
-        data = {'variables': variables, 'formulas': formulas}
+        global_tables = {}
+        data = {'variables': variables, 'formulas': formulas, "global_tables": global_tables}
 
         package = FormulaPackage(list(map(lambda x: x.expression, task.formula_set.all())))
+
+
 
         variables.extend(
             {
@@ -293,6 +296,23 @@ def task_get_report(request, task_id: int):
             }
             for variable in task.variable_set.all()
         )
+
+        dct = {}
+        for variable in task.variable_set.all():
+            mappings = variable.mapping_set.all()
+            for mapping in mappings:
+                if mapping.key not in dct:
+                    dct[mapping.key] = {}
+                dct[mapping.key][variable.name] = mapping.value
+
+        for key, item in dct.items():
+            str_var = "".join(sorted(item.keys()))
+            if str_var not in global_tables:
+                global_tables[str_var] = {}
+            global_tables[str_var][key] = item
+
+        print(global_tables)
+
 
         package.set_variables(
             {

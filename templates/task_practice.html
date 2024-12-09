@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} 
 
 {% block content %}
 <div class="row">
@@ -6,41 +6,55 @@
         <h4>{{ task.name }}. Практическая часть</h4>
     </div>
 </div>
-
 <div class="row mt-4">
     <div class="col-12">
         <form id="practice-form" onsubmit="return onGetReport()">
             {% for formula in formulas %}
-            <div class="row my-3 border">
-                <div class="col">
-                    <div class="row mt-2">
-                        <h5 class="col text-start">Формула: {{ formula.expression }}</h5>
+                <div class="row my-3 border">
+                    <div class="col">
+                        <div class="row mt-2">
+                            <h5 class="col text-start">Формула: {{ formula.expression }}</h5>
+                        </div>
                     </div>
                 </div>
-            </div>
             {% endfor %}
-            <div class="row mt-3">
-                {% for variable in task.variable_set.all %}
-                <div class="col-12 col-sm-4 text-center border">
-                    <div class="row p-2">
-                        <div class="col-4">
-                            <h6>{{ variable.name }}:</h6>
-                        </div>
-                        <div class="col-8">
-                            {% if variable.mapping_set.count > 0 %}
-                            <select class="form-select" name="{{ variable.id }}">
-                                {% for mapping in variable.mapping_set.all %}
-                                <option value="{{ mapping.value }}">{{ mapping.key }}</option>
-                                {% endfor %}
-                            </select>
-                            {% else %}
-                            <input type="number" step="any" class="form-control" name="{{ variable.id }}" required>
-                            {% endif %}
+            <!-- Render grouped variables -->
+            <div id="grouped-variables"></div>
+            <!-- Render ungrouped variables with mappings -->
+            {% for variable in task.variable_set.all %}
+                {% if variable.mapping_set.count > 0 %}
+                    <div class="col-12 col-sm-4 text-center border" id="var_{{ variable.id }}">
+                        <div class="row p-2">
+                            <div class="col-4">
+                                <h6>{{ variable.name }}:</h6>
+                            </div>
+                            <div class="col-8">
+                                <select class="form-select" id="select_{{ variable.id }}" name="{{ variable.id }}">
+                                    {% for mapping in variable.mapping_set.all %}
+                                        <option value="{{ mapping.value }}">{{ mapping.key }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
+                {% endif %}
+            {% endfor %}
+            <!-- Render non-grouped variables without mappings -->
+            {% for variable in task.variable_set.all %}
+                {% if variable.mapping_set.count == 0 %}
+                    <div class="col-12 col-sm-4 text-center border">
+                        <div class="row p-2">
+                            <div class="col-4">
+                                <h6>{{ variable.name }}:</h6>
+                            </div>
+                            <div class="col-8">
+                                <input type="number" step="any" class="form-control" name="{{ variable.id }}" required>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <!-- Button to get report -->
             <div class="row my-4">
                 <div class="col text-center">
                     <button type="submit" class="btn btn-primary" id="get-report-btn">Получить отчет</button>
@@ -49,10 +63,139 @@
         </form>
     </div>
 </div>
-{% endblock %}
-
+{% endblock %} 
 {% block scripts %}
 <script>
+    var variablesData = [
+        {% for variable in task.variable_set.all %}
+            {
+                id: {{ variable.id }},
+                name: "{{ variable.name }}",
+                mappings: [
+                    {% for mapping in variable.mapping_set.all %}
+                        { key: "{{ mapping.key }}", value: {{ mapping.value }} },
+                    {% endfor %}
+                ]
+            },
+        {% endfor %}
+    ];
+
+    function groupVariablesByMappings(variables) {
+        var groups = {};
+        variables.forEach(function(varObj) {
+            var sortedKeys = varObj.mappings.map(function(mapping) { return mapping.key; }).sort().join('|');
+            if (!groups[sortedKeys]) {
+                groups[sortedKeys] = [];
+            }
+            groups[sortedKeys].push(varObj);
+        });
+        return Object.values(groups);
+    }
+
+    var variableGroups = groupVariablesByMappings(variablesData);
+
+    // Collect grouped variable IDs
+    var groupedVariableIds = new Set();
+    variableGroups.forEach(function(group) {
+        if (group.length > 1) {
+            group.forEach(function(varObj) {
+                groupedVariableIds.add(varObj.id);
+            });
+        }
+    });
+
+    // Render grouped variables
+    variableGroups.forEach(function(group) {
+        if (group.length > 1) {
+            // Create table for the group
+            var table = document.createElement('table');
+            table.className = 'table';
+            var thead = document.createElement('thead');
+            var headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th>Набор</th>' + group.map(function(varObj) { return '<th>' + varObj.name + '</th>'; }).join('');
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            var tbody = document.createElement('tbody');
+            var keys = group[0].mappings.map(function(mapping) { return mapping.key; });
+            keys.forEach(function(key) {
+                var row = document.createElement('tr');
+                row.innerHTML = '<td>' + key + '</td>' + group.map(function(varObj) {
+                    var value = varObj.mappings.find(function(mapping) { return mapping.key === key; }).value;
+                    return '<td>' + value + '</td>';
+                }).join('');
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+
+            // Create a single select for the group
+            var select = document.createElement('select');
+            select.className = 'form-select';
+            select.name = 'group_' + group.map(function(varObj) { return varObj.id; }).join('_');
+            group[0].mappings.forEach(function(mapping) {
+                var option = document.createElement('option');
+                option.value = mapping.key;
+                option.textContent = mapping.key;
+                select.appendChild(option);
+            });
+
+            // Append table and select to the DOM
+            document.getElementById('grouped-variables').appendChild(table);
+            document.getElementById('grouped-variables').appendChild(select);
+            document.getElementById('grouped-variables').appendChild(document.createElement('br'));
+
+            // Update hidden inputs based on selected key
+            select.addEventListener('change', function() {
+                var selectedKey = select.value;
+                group.forEach(function(varObj) {
+                    var value = varObj.mappings.find(function(mapping) { return mapping.key === selectedKey; }).value;
+                    var hiddenInput = document.getElementById('select_' + varObj.id);
+                    if (hiddenInput) {
+                        hiddenInput.value = value + (`${value}`.includes(",") ? `${value}`.replaceAll(",", ".") : ".0");
+                    }
+                });
+            });
+        }
+    });
+
+    // Hide individual selects of grouped variables
+    variableGroups.forEach(function(group) {
+        if (group.length > 1) {
+            group.forEach(function(varObj) {
+                var selectElement = document.getElementById('select_' + varObj.id);
+                if (selectElement) {
+                    selectElement.style.display = 'none';
+                }
+            });
+        }
+    });
+
+    // For ungrouped variables with mappings, set hidden input based on selected value
+    variablesData.forEach(function(varObj) {
+        if (varObj.mappings.length > 0 && !groupedVariableIds.has(varObj.id)) {
+            var selectElement = document.getElementById('select_' + varObj.id);
+            if (selectElement) {
+                selectElement.addEventListener('change', function() {
+                    var hiddenInput = document.getElementById('input_' + varObj.id);
+                    if (hiddenInput) {
+                        hiddenInput.value = selectElement.value;
+                    }
+                });
+                // Set initial value
+                var initialSelectedValue = selectElement.value;
+                var hiddenInput = document.getElementById('input_' + varObj.id);
+                if (hiddenInput) {
+                    hiddenInput.value = initialSelectedValue;
+                }
+            }
+        }
+    });
+
+    groupedVariableIds.forEach(function(id) {
+        let elem = document.getElementById(`var_${id}`);
+        elem.setAttribute("hidden", "true");
+    });
+
     function onGetReport() {
         fetch('{% url 'task_get_report' task_id=task.id %}', {
             method: 'POST',
@@ -71,8 +214,7 @@
             link.click();
             link.parentNode.removeChild(link);
         });
-
-        return false
+        return false;
     }
 </script>
 {% endblock %}
