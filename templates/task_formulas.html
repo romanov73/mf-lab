@@ -47,69 +47,79 @@
 
     </div>
 
-    <div class="table-responsive mt-3">
-        <table class="table " id="group-table">
-            <thead>
-                <tr id="table-header">
-                    <th scope="col" id="group-header-name">Имя</th>
-                    <th scope="col" id="add-new-variable"></th>
-                </tr>
-            </thead>
-            <tbody id="group-body-id">
-                <tr class="" id="adding-value">
-                    <td colspan="2">
-                       <button class="btn btn-outline-primary" id="add-new-line">+</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <div id="tables-area">
+
     </div>
+
+    <select class="form-select w-auto" id="variable-selector" hidden>
+
+    </select>
+
+
     <!-- Область шаблонов -->
 <div class="col-12 col-sm-4 text-center border" id="variable-template" hidden>
-    <div class="row p-2">
-        <div class="col-4">
-            <h3 id="variable-name">placeholder</h3>
-        </div>
-        <div class="col">
-            <div class="row">
-                <select class="form-select" id="mode-select">
-                    <option value="exact">Ввод значения</option>
-                    <option value="selectable" >Выбор из списка</option>
-                    <option value="global-selectable" id="table-select">Из общей таблицы</option>
-                </select>
-            </div>
+<div class="row p-2">
+    <div class="col-4">
+        <h3 id="variable-name">placeholder</h3>
+    </div>
+    <div class="col">
+        <div class="row">
+            <select class="form-select" id="mode-select">
+                <option value="exact">Ввод значения</option>
+                <option value="selectable" hidden>Выбор из списка</option>
+                <option value="global-selectable" id="table-select" hidden>Из общей таблицы</option>
+            </select>
         </div>
     </div>
-    <div class="row" id="simple-mapping" hidden>
-        <div class="col" id="mapping-variable">
-            <div class="row text-start">
-                <h6>Пары ключ-значение:</h6>
+</div>
+<div class="row" id="simple-mapping" hidden>
+    <div class="col" id="mapping-variable">
+        <div class="row text-start">
+            <h6>Пары ключ-значение:</h6>
+        </div>
+        <div class="row mb-2">
+            <div class="col-5">
+                <input placeholder="Ключ" class="form-control" id="key-variable" />
             </div>
-            <div class="row mb-2">
-                <div class="col-5">
-                    <input placeholder="Ключ" class="form-control" id="key-variable" />
-                </div>
-                <div class="col-5">
-                    <input pattern="[0-9]+([\.,][0-9]+)?" placeholder="Значение" class="form-control" id="value-variable" />
-                </div>
-                <div class="col-2">
-                    <button class="btn btn-success" id="add-key-value-pair-btn">+</button>
-                </div>
+            <div class="col-5">
+                <input pattern="[0-9]+([\.,][0-9]+)?" placeholder="Значение" class="form-control" id="value-variable" />
+            </div>
+            <div class="col-2">
+                <button class="btn btn-success" id="add-key-value-pair-btn">+</button>
             </div>
         </div>
     </div>
 </div>
+</div>
 
 <div class="row text-start pair" id="select-row-template" hidden>
-    <div class="col text-center">
-        <h6 id="key">key</h6>
-    </div>
-    <div class="col text-end">
-        <h6 id="value">value</h6>
-    </div>
-    <div class="col text-end">
-        <button class="btn btn-outline-danger btn-sm" id="delete-maping"><i class="bi bi-trash"></i></button>
-    </div>
+<div class="col text-center">
+    <h6 id="key">key</h6>
+</div>
+<div class="col text-end">
+    <h6 id="value">value</h6>
+</div>
+<div class="col text-end">
+    <button class="btn btn-outline-danger btn-sm" id="delete-maping"><i class="bi bi-trash"></i></button>
+</div>
+</div>
+
+<div class="table-responsive mt-3" id="variables-table" hidden>
+<table class="table " id="group-table">
+<thead>
+    <tr id="table-header">
+        <th scope="col" id="group-header-name">Имя</th>
+        <th scope="col" id="add-new-variable"></th>
+    </tr>
+</thead>
+<tbody id="group-body-id">
+    <tr class="" id="adding-value">
+        <td colspan="2">
+           <button class="btn btn-outline-primary" id="add-new-line">+</button>
+        </td>
+    </tr>
+</tbody>
+</table>
 </div>
 
 {% endblock %}
@@ -141,11 +151,13 @@
         ]
         let groupingVariables = []
         let simpleVariables = []
-        let mappingKeys = []
+        //let mappingKeys = []
         const simpleVarTemplate = document.getElementById('variable-template');
         const selectRowTemplate = document.getElementById("select-row-template");
         const area = document.getElementById('area')
-        const groupTable = document.getElementById("group-table")
+        //const groupTable = document.getElementById("group-table")
+        const templateTemplate = document.getElementById("variables-table")
+        const addingVariableTemplate = document.getElementById("variable-selector")
 
         function UpdateDataView(){
             let tmp = {}
@@ -154,54 +166,79 @@
                 if (sortedArray.length >0){
                     let key = sortedArray.reduce((acc,x)=>`${acc}|${x}`)
                     if(tmp.hasOwnProperty(key))
-                        tmp[key].push(v.id)
+                        tmp[key].push(v)
                     else
-                        tmp[key] = [v.id]
+                        tmp[key] = [v]
                 }
             })
 
-            let grouping = Object.keys(tmp).map(function(key) {
+            let tmp_grouping = Object.keys(tmp).map(function(key) {
               return [key, tmp[key]];
-            }).sort((x,y)=>y[1].length - x[1].length)[0];
+            }).sort((x,y)=>y[1].length - x[1].length)
 
-            console.log(grouping)
+            //tmp_grouping = tmp_grouping.filter(x=>x[1].length>1 || x[0] === "null")
 
-            variables.filter(x=> grouping==null || grouping[1].indexOf(x.id) === -1).forEach(x=>{
-                if (x.current_type === -1)
-                    x.current_type = x.maping == null ? 0: 1
+            variables.forEach(x=>{
+                x.current_type = x.maping == null ? 0: 1
             })
+
             simpleVariables = variables
 
+            console.log(tmp_grouping)
 
-            groupingVariables = {}
+            DrawTables(tmp_grouping)
 
-            variables.filter(x=>x.current_type === -1 || x.current_type > 1).forEach(v=>{
-                if (v.current_type === -1)
-                    v.current_type = 2
-                v.maping.forEach(m=>{
-                    if (groupingVariables[m.key] == null)
-                        groupingVariables[m.key] = {}
-
-                    if(groupingVariables[m.key][v.name] == null)
-                        groupingVariables[m.key][v.name] = {
-                            obj:v,
-                            mapping:m
-                        }
-
-                })
-            })
              DrawSimpleVariables()
-            DrawTable()
-
-            console.log(groupingVariables)
         }
 
-        function DrawTable(){
+        function DrawTables(list){
 
-            let select = groupTable.querySelector("#add-new-variable")
+            const table_area = document.getElementById("tables-area")
 
-            let addNewLine = groupTable.querySelector("#add-new-line")
-            let group_body = groupTable.querySelector("#group-body-id")
+            table_area.innerHTML = ""
+
+            for (let i = 0; i < list.length; i++) {
+                list[i][1].forEach(x=>x.current_type = 2)
+            }
+
+            for (let i = 0; i < list.length; i++) {
+                let table = templateTemplate.cloneNode(true)
+                table.removeAttribute("hidden")
+                table_area.appendChild(table)
+
+                let grouping = list[i][1];
+
+                let grouping_dict = {}
+
+                grouping.forEach(v=>{
+                    v.maping.forEach(m=>{
+                        if (grouping_dict[m.key] == null)
+                            grouping_dict[m.key] = {}
+
+                        if(grouping_dict[m.key][v.name] == null)
+                            grouping_dict[m.key][v.name] = {
+                                obj:v,
+                                mapping:m
+                            }
+                    })
+                })
+
+                console.log(grouping_dict)
+                DrawTable(table, grouping_dict)
+            }
+
+            let table = templateTemplate.cloneNode(true)
+            table.removeAttribute("hidden")
+            table_area.appendChild(table)
+            DrawTable(table, {})
+        }
+
+        function DrawTable(tableElement, elements){
+
+            let select = tableElement.querySelector("#add-new-variable")
+
+            let addNewLine = tableElement.querySelector("#add-new-line")
+            let group_body = tableElement.querySelector("#group-body-id")
 
             // Удаляем старые строки
             var count = group_body.children.length
@@ -215,12 +252,12 @@
                 select.parentNode.children.item(1).remove()
             }
 
-            const addingValue = document.getElementById("adding-value")
+            const addingValue = tableElement.querySelector("#adding-value")
 
             let flag = true;
-            mappingKeys = []
+            let mappingKeys = []
 
-            for (let [g_key, g_value] of Object.entries(groupingVariables)) {
+            for (let [g_key, g_value] of Object.entries(elements)) {
                 let tr = document.createElement('tr');
                 let td = document.createElement('td')
 
@@ -308,17 +345,77 @@
                 //group_body.appendChild(tr)
             }
 
+             const addingVariable = addingVariableTemplate.cloneNode(true);
+            addingVariable.removeAttribute("hidden",null)
+
+            let optionElement = document.createElement('option')
+            optionElement.innerHTML = "+"
+            optionElement.setAttribute("selected",null)
+
+            optionElement.setAttribute("value","-1")
+
+            addingVariable.appendChild(optionElement);
+
+            variables.filter(x=>x.current_type !== 2).forEach(x=>{
+                optionElement = document.createElement('option')
+                optionElement.innerHTML = x.name
+                optionElement.setAttribute("value",x.id)
+                addingVariable.appendChild(optionElement);
+            })
+
+            addingVariable.onchange = ()=> {
+
+                if(addingVariable.value === "-1")
+                    return
+
+                let item  = variables.filter(x=>x.id === addingVariable.value)[0]
+
+                  item.current_type = 2
+                           //mappingPanel.setAttribute("hidden",null);
+
+                   let newVar = item;
+
+                    if (newVar.maping == null)
+                        newVar.maping = []
+                    mappingKeys.forEach(x=>{
+                        if(newVar.maping.filter(y=>y.key === x).length===0){
+                            newVar.maping.push({
+                                key:x,
+                                value:null
+                            })
+                        }
+                    })
+                    for (let i = 0; i < newVar.maping.length; i++) {
+                        if(mappingKeys.filter(x=>x === newVar.maping[i].key).length === 0){
+                            newVar.maping.splice(newVar.maping, 1)
+                            i--;
+                        }
+                    }
+
+                    if(newVar.maping.length === 0){
+                        newVar.maping.push({
+                                key:"null",
+                                value:null
+                            })
+                    }
+
+                    UpdateDataView()
+
+            }
+
+            select.appendChild(addingVariable)
+
             let colspan = 2
             if(mappingKeys.length > 0){
-                colspan += Object.entries(groupingVariables[mappingKeys[0]]).length
+                colspan += Object.entries(elements[mappingKeys[0]]).length
             }
 
             addNewLine.parentNode.setAttribute("colspan", colspan)
             addNewLine.onclick = ()=>{
-                if(Object.entries(groupingVariables).length === 0)
+                if(Object.entries(elements).length === 0)
                     return
 
-                for (let [e_key, e_value] of Object.entries(Object.entries(groupingVariables)[0][1])){
+                for (let [e_key, e_value] of Object.entries(Object.entries(elements)[0][1])){
                     e_value.obj.maping.push({
                         key:"null",
                         value:null
@@ -347,16 +444,17 @@
                         select.value = 'selectable'
                         break
                     case 2:
+                        select.querySelector("#table-select").removeAttribute("hidden")
                         select.value = 'global-selectable'
                         break;
                 }
+
 
                 function MappingModeChange(){
                    mappingPanel.querySelectorAll("#select-row-template").forEach(element =>element.remove())
                    if (select.value === 'selectable'){
 
-                       if(item.maping !== null && item.maping.values().some(x=>x.value == null))
-                          item.maping = null
+                       item.maping = []
 
                        item.current_type = 1
 
@@ -416,7 +514,7 @@
                    }
                    else{
                        item.current_type = 0
-                       mappingPanel.setAttribute("hidden",null);
+                       item.maping = null
                    }
                }
                 MappingModeChange();
