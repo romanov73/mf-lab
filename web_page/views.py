@@ -187,7 +187,7 @@ def formula_extract_variables(request, task_id: int, **kwargs):
         if not request.POST.get('next'):
             formulas = FormulaPackage(json.loads(request.body)['formulas'])
         else:
-            formulas = FormulaPackage(list(map(lambda x: x.expression, Formula.objects.all())))
+            formulas = FormulaPackage(list(map(lambda x: x.expression, task.formula_set.all())))
 
         if formulas.error_text is not None:
             return redirect(json.loads(request.body)['next'])
@@ -228,8 +228,9 @@ def task_create_formula(request, task_id: int):
 def task_delete_formula(request, formula_id: int, **kwargs):
     if request.method == 'POST':
         formula = get_object_or_404(Formula, id=formula_id)
+        task_id = int(formula.task_id)
         formula.delete()
-        return formula_extract_variables(request, int(formula.task_id))
+        return formula_extract_variables(request, task_id)
 
 
 @login_required
