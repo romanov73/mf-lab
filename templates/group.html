@@ -55,7 +55,7 @@
         {% if students != null %}
             var GroupsInputs = $("input[name='students']")
             var selected = select.getSelected();
-            console.log(selected)
+            {#console.log(selected)#}
             GroupsInputs[0].value = selected.join("|")
         {% endif %}
     });
