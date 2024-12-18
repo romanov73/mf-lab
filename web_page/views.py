@@ -312,8 +312,6 @@ def task_get_report(request, task_id: int):
                 global_tables[str_var] = {}
             global_tables[str_var][key] = item
 
-        print(global_tables)
-
 
         package.set_variables(
             {

@@ -84,10 +84,12 @@
         var groups = {};
         variables.forEach(function(varObj) {
             var sortedKeys = varObj.mappings.map(function(mapping) { return mapping.key; }).sort().join('|');
-            if (!groups[sortedKeys]) {
-                groups[sortedKeys] = [];
+            if (sortedKeys !== "") {
+                if (!groups[sortedKeys]) {
+                    groups[sortedKeys] = [];
+                }
+                groups[sortedKeys].push(varObj);
             }
-            groups[sortedKeys].push(varObj);
         });
         return Object.values(groups);
     }
