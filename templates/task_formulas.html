@@ -13,7 +13,7 @@
     <form action="{% url 'task_create_formula' task_id=task_id %}" method="post" class="col-4 col-md-2">
         {% csrf_token %}
         <input hidden name="next" value="{{ request.path }}" />
-        <button id="add_formula_btn" class="btn btn-primary" type="submit">
+        <button id="add_formula_btn" class="btn btn-primary" type="submit" >
             Добавить формулу
         </button>
     </form>
@@ -51,9 +51,7 @@
 
     </div>
 
-    <select class="form-select w-auto" id="variable-selector" hidden>
-
-    </select>
+    <Input class="form-control w-auto" type="text" id="variable-input" hidden />
 
 
     <!-- Область шаблонов -->
@@ -157,7 +155,7 @@
         const area = document.getElementById('area')
         //const groupTable = document.getElementById("group-table")
         const templateTemplate = document.getElementById("variables-table")
-        const addingVariableTemplate = document.getElementById("variable-selector")
+        const addingVariableTemplate = document.getElementById("variable-input")
 
         function UpdateDataView(){
             let tmp = {}
@@ -178,8 +176,9 @@
 
             //tmp_grouping = tmp_grouping.filter(x=>x[1].length>1 || x[0] === "null")
 
+
             variables.forEach(x=>{
-                x.current_type = x.maping == null ? 0: 1
+                x.current_type = x.maping == null || x.maping.length === 0 ? 0: 2
             })
 
             simpleVariables = variables
@@ -332,9 +331,11 @@
                 del.onclick = () =>{
                     if(confirm("Вы уверены, что хотите удалить данную строку целиков?")){
                          for (let [e_key, e_value] of Object.entries(g_value)){
-                             let index = e_value.obj.maping.indexOf(e_value.obj.maping.filter(x=>x.key === g_key)[0])
 
+                            let index = e_value.obj.maping.indexOf(e_value.obj.maping.filter(x=>x.key === g_key)[0])
                             e_value.obj.maping.splice(index, 1)
+                             e_value.obj.current_type = 0
+                             console.log(e_value.obj)
                         }
                         UpdateDataView()
                     }
@@ -348,28 +349,26 @@
              const addingVariable = addingVariableTemplate.cloneNode(true);
             addingVariable.removeAttribute("hidden",null)
 
-            let optionElement = document.createElement('option')
-            optionElement.innerHTML = "+"
-            optionElement.setAttribute("selected",null)
-
-            optionElement.setAttribute("value","-1")
-
-            addingVariable.appendChild(optionElement);
-
-            variables.filter(x=>x.current_type !== 2).forEach(x=>{
-                optionElement = document.createElement('option')
-                optionElement.innerHTML = x.name
-                optionElement.setAttribute("value",x.id)
-                addingVariable.appendChild(optionElement);
-            })
-
             addingVariable.onchange = ()=> {
 
-                if(addingVariable.value === "-1")
+                if(addingVariable.value === "")
                     return
 
-                let item  = variables.filter(x=>x.id === addingVariable.value)[0]
+                let item  = variables.filter(x=>x.name === addingVariable.value)
 
+                if(item.length >0){
+                    item = item[0]
+                }
+                else{
+                    item = {
+                        id: "new",
+                       name: addingVariable.value,
+                       element:null,
+                       current_type: -1,
+                       maping: []
+                    }
+                    variables.push(item)
+                }
                   item.current_type = 2
                            //mappingPanel.setAttribute("hidden",null);
 
@@ -472,6 +471,7 @@
                                ln.querySelector("#delete-maping").onclick = () => {
                                    if(confirm(`Вы уверены, что хотите удалить ${maping.key}?`)){
                                        item.maping.splice(item.maping.indexOf(item.maping.filter(x=>x.key === maping.key)[0]),1)
+                                       item.current_type = 1
                                        UpdateDataView();
                                    }
                                }
@@ -558,7 +558,7 @@
             variables.forEach(v=>{
                 if(v.current_type !== 0){
                     let record = {
-                        id:v.id,
+                        name:v.name,
                         mapping:[]
                     }
 
@@ -578,7 +578,7 @@
                 return
 
             fetch(
-                "{% url 'task_formulas_mapping' task_id=task_id %}",
+                "{% url 'task_formulas_mapping_by_name' task_id=task_id %}",
                 {
                     method: "POST",
                     headers: {
@@ -610,6 +610,8 @@
                 }
             ).then(response => window.location.reload())
         })
+        
+        
 
         UpdateDataView()
     </script>
