@@ -179,8 +179,6 @@ def task_page(request, task_id: int, **kwargs):
     files = File.objects.filter(task_id=task_id).exclude(file_name__startswith=PDF_PREFIX)
     main_pdf = File.objects.filter(task_id=task_id, file_name__startswith=PDF_PREFIX).first()
 
-    print(f"ФАйлы: {files}")
-    print(f"PDF: {main_pdf}")
     return render(request, 'task.html', {'task': task, 'files': files, 'main_pdf': main_pdf})
 
 

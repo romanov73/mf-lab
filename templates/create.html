@@ -150,7 +150,6 @@
             {% endfor %}
         ],
     })
-    console.log({{main_pdf}})
     const pdfPond = FilePond.create(document.querySelector('#InputPdf'),{
         {% if main_pdf != null%}
         files: [
