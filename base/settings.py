@@ -36,6 +36,8 @@ environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
+X_FRAME_OPTIONS = 'ALLOWALL'
+
 SECRET_KEY = env('SECRET_KEY')
 if SECRET_KEY == "my-secret-key":
     print("Secret Key is not set")
