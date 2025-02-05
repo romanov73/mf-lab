@@ -67,7 +67,9 @@
         image_title: true,
         automatic_uploads: true,
     });
-
+    
+    FilePond.registerPlugin(FilePondPluginFileValidateType);
+    
     FilePond.setOptions({
         server: {
             url: '/fp',
@@ -97,42 +99,9 @@
                 headers: {"X-CSRFToken": $crf_token},
             }
         },
-        allowMultiple: true,
-        name:"attachments"
+        
     })
 
-    FilePond.setOptions({
-        server: {
-            url: '/fp',
-            process:{
-                url:'/process/',
-                ode: 'same-origin',
-                headers: {"X-CSRFToken": $crf_token},
-            },
-            patch:{
-                url: '/patch/',
-                ode: 'same-origin',
-                headers: {"X-CSRFToken": $crf_token},
-            },
-            revert: {
-                url:  '/revert/',
-                ode: 'same-origin',
-                headers: {"X-CSRFToken": $crf_token},
-            },
-            fetch:{
-                url:  '/fetch/?target=',
-                ode: 'same-origin',
-                headers: {"X-CSRFToken": $crf_token},
-            },
-            load:{
-                url: '/load/',
-                ode: 'same-origin',
-                headers: {"X-CSRFToken": $crf_token},
-            }
-        },
-        allowMultiple: false,
-        name:"mainPdf"
-    })
 
     const pond = FilePond.create(document.querySelector('#InputFiles'),{
         files: [
@@ -149,6 +118,8 @@
             },
             {% endfor %}
         ],
+        name:"attachments",
+        allowMultiple: true,
     })
     const pdfPond = FilePond.create(document.querySelector('#InputPdf'),{
         {% if main_pdf != null%}
@@ -164,6 +135,8 @@
             },
         ],
         {% endif %}
+        acceptedFileTypes: ["application/pdf"],
+        name:"mainPdf",
     })
 
     {% if groups != null %}
