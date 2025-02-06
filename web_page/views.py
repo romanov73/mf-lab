@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from json import loads
 from frc import DocxReport
+from web_page.logic.file_uploader import PDF_PREFIX
 from web_page.models import Course, Formula, Variable, Task, Mapping, File, UniGroup, User
 from expression_parser.FormulaPackage import FormulaPackage
 from web_page.utils import for_student, for_teacher
@@ -175,9 +176,10 @@ def task_list(request, course_id: int):
 @login_required
 def task_page(request, task_id: int, **kwargs):
     task = get_object_or_404(Task, id=task_id)
-    files = File.objects.filter(task_id=task_id)
+    files = File.objects.filter(task_id=task_id).exclude(file_name__startswith=PDF_PREFIX)
+    main_pdf = File.objects.filter(task_id=task_id, file_name__startswith=PDF_PREFIX).first()
 
-    return render(request, 'task.html', {'task': task, 'files': files})
+    return render(request, 'task.html', {'task': task, 'files': files, 'main_pdf': main_pdf})
 
 
 @login_required

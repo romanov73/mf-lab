@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
+from web_page.logic.file_uploader import PDF_PREFIX
 from web_page.models import Course, Task, File
 from web_page.utils import for_teacher
 
@@ -46,7 +47,8 @@ def edit_course_view(request, course_id: int, task_id: int):
                       "object_name": task.name,
                       "object_summary": task.summary,
                       "object_description": task.description,
-                      "files": [i.id for i in File.objects.filter(task=task)]
+                      "files": [i.id for i in File.objects.filter(task=task) if not i.file_name.startswith(PDF_PREFIX)],
+                      "main_pdf": next((x.id for x in File.objects.filter(task=task) if x.file_name.startswith(PDF_PREFIX)), None)
                   })
 
 
@@ -68,6 +70,14 @@ def add_task_action(request, course_id: int):
                 file.task = task
                 file.save()
 
+    if request.POST["mainPdf[]"]:
+        for fid in request.POST["mainPdf[]"].split("|"):
+            file: File = File.objects.get(id=fid)
+            if file is not None:
+                file.course = None
+                file.task = task
+                file.save()
+
     return redirect("course-tasks", course_id)
 
 
@@ -79,8 +89,16 @@ def update_task_action(request, course_id: int, task_id: int):
     task.save()
 
     if request.POST["attachments[]"]:
-
         for fid in request.POST["attachments[]"].split("|"):
+            file: File = File.objects.get(id=fid)
+            if file is not None:
+                if file.task != task:
+                    file.course = None
+                    file.task = task
+                    file.save()
+
+    if request.POST["mainPdf[]"]:
+        for fid in request.POST["mainPdf[]"].split("|"):
             file: File = File.objects.get(id=fid)
             if file is not None:
                 if file.task != task:
