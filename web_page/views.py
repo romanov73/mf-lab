@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from json import loads
 from frc import DocxReport
+from web_page.logic.file_uploader import PDF_PREFIX
 from web_page.models import Course, Formula, Variable, Task, Mapping, File, UniGroup, User
 from expression_parser.FormulaPackage import FormulaPackage
 from web_page.utils import for_student, for_teacher
@@ -95,11 +96,13 @@ def groups_list(request):
 def group_page(request, group_id=None, **kwargs):
     if request.method == 'GET':
         if group_id is None:
-            return render(request, 'group.html', {'students': User.objects.filter(is_teacher=False, uni_group=None).all()})
+            return render(request, 'group.html',
+                          {'students': User.objects.filter(is_teacher=False, uni_group=None).all()})
 
         group = get_object_or_404(UniGroup, id=group_id)
 
-        return render(request, 'group.html', {'group': group, 'students': User.objects.filter(is_teacher=False, uni_group=None).all()})
+        return render(request, 'group.html',
+                      {'group': group, 'students': User.objects.filter(is_teacher=False, uni_group=None).all()})
 
     if group_id is None:
         group = UniGroup(name=request.POST.get('name'))
@@ -115,7 +118,6 @@ def group_page(request, group_id=None, **kwargs):
         for student in [User.objects.get(id=int(student_id)) for student_id in request.POST.get('students').split('|')]:
             student.uni_group = group
             student.save()
-
 
     return redirect('group_page', group_id=group_id)
 
@@ -174,9 +176,10 @@ def task_list(request, course_id: int):
 @login_required
 def task_page(request, task_id: int, **kwargs):
     task = get_object_or_404(Task, id=task_id)
-    files = File.objects.filter(task_id=task_id)
+    files = File.objects.filter(task_id=task_id).exclude(file_name__startswith=PDF_PREFIX)
+    main_pdf = File.objects.filter(task_id=task_id, file_name__startswith=PDF_PREFIX).first()
 
-    return render(request, 'task.html', {'task': task, 'files': files})
+    return render(request, 'task.html', {'task': task, 'files': files, 'main_pdf': main_pdf})
 
 
 @login_required
@@ -199,7 +202,7 @@ def formula_extract_variables(request, task_id: int, **kwargs):
 
         variables = set(formulas.variables)
 
-        Variable.objects.filter(task_id=task_id).exclude(name__in=list(variables)).delete()
+        Variable.objects.filter(task_id=task_id).exclude(name__in=list(variables)).filter(mapping__isnull=True).delete()
         stored = set(map(lambda v: v.name, Variable.objects.filter(task_id=task_id).all()))
 
         for variable in variables - stored:
@@ -235,7 +238,7 @@ def task_delete_formula(request, formula_id: int, **kwargs):
 
 @login_required
 @for_teacher()
-def task_formulas_mapping(request, task_id: int, **kwargs):
+def task_formulas_mapping_by_id(request, task_id: int, **kwargs):
     if request.method == 'POST':
         variables = loads(request.body.decode('utf-8'))
         Mapping.objects.filter(variable__task_id=task_id).delete()
@@ -243,6 +246,67 @@ def task_formulas_mapping(request, task_id: int, **kwargs):
             Mapping.objects.bulk_create(
                 (Mapping(key=mapping['key'], value=mapping['value'], variable_id=variable['id'])
                  for mapping in variable['mapping'])
+            )
+
+        return HttpResponse('Изменения прошли успешно')
+
+
+@login_required
+@for_teacher()
+def task_formulas_mapping_by_name(request, task_id: int, **kwargs):
+    if request.method == 'POST':
+        variables_json = loads(request.body.decode('utf-8'))
+        # variables_json = [{"name": "a",
+        #                    "mapping": [
+        #                        {
+        #                            "key": "ad",
+        #                            "value": "23.0"
+        #                        },
+        #                        {
+        #                            "key": "fa",
+        #                            "value": "56.0"
+        #                        }
+        #                    ]
+        #                    },
+        #                   {
+        #                       "name": "d",
+        #                       "mapping": [
+        #                           {
+        #                               "key": "4",
+        #                               "value": "1.0"
+        #                           },
+        #                           {
+        #                               "key": "45",
+        #                               "value": "5.0"
+        #                           }
+        #                       ]
+        #                   }
+        # ]
+        variables_json = {i["name"]: i["mapping"] for i in variables_json}
+        variables_local = Variable.objects.filter(task_id=task_id).all()
+        task = get_object_or_404(Task, id=task_id)
+        formulas = FormulaPackage(list(map(lambda x: x.expression, task.formula_set.all())))
+
+        formulas_variables = formulas.variables
+
+        for variable in variables_local:
+            if variable.name in variables_json.keys():
+                variable.mapping_set.all().delete()
+                Mapping.objects.bulk_create(
+                    (Mapping(key=mapping['key'], value=mapping['value'], variable_id=variable.id)
+                     for mapping in variables_json[variable.name])
+                )
+                variables_json.pop(variable.name)
+            elif variable.name in formulas_variables:
+                variable.mapping_set.all().delete()
+            else:
+                variable.delete()
+
+        for variable in variables_json.keys():
+            new_var = Variable.objects.create(name=variable, task_id=task_id)
+            Mapping.objects.bulk_create(
+                (Mapping(key=mapping['key'], value=mapping['value'], variable_id=new_var.id)
+                 for mapping in variables_json[variable])
             )
 
         return HttpResponse('Изменения прошли успешно')
@@ -261,7 +325,7 @@ def task_formulas(request, task_id: int):
                       'has_empty': '' in map(lambda x: x.expression, task.formula_set.all()),
                       'task_id': task.id
                   }
-                  )
+    )
 
 
 @login_required
@@ -288,8 +352,6 @@ def task_get_report(request, task_id: int):
 
         package = FormulaPackage(list(map(lambda x: x.expression, task.formula_set.all())))
 
-
-
         variables.extend(
             {
                 "name": variable.name,
@@ -311,7 +373,6 @@ def task_get_report(request, task_id: int):
             if str_var not in global_tables:
                 global_tables[str_var] = {}
             global_tables[str_var][key] = item
-
 
         package.set_variables(
             {

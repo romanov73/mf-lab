@@ -33,18 +33,36 @@
         <label for="" class="form-label">Описание:</label>
         <textarea id="editor" name="text">{{ object_description|safe }}</textarea>
     </div>
+    {% if "задач" in button_text %}
+        <div class="mb-1 form-file">
+            <span>Загрузите PDF файл с описанием задачи</span>
+            <input class="filepond" type="file" name="mainPdf" accept="application/pdf" id="InputPdf">
+        </div>
+    {% endif %}
+
     <div class="mb-1 form-file">
+        <span>Загрузите дополнительные файлы</span>
         <input class="filepond" type="file" name="attachments" multiple="multiple" id="InputFiles">
     </div>
-    <div class="d-flex justify-content-end mb-4">
-        {% if task_id %}
-        <a class="btn btn-outline-primary align-self-end me-2" href="{% url 'task_formulas' task_id=task_id %}">Перейти к формулам</a>
-        {% elif course_id %}
-        <a class="btn btn-outline-primary align-self-end me-2" href="{% url 'course-tasks' course_id=course_id %}">Перейти к лабораторным</a>
-        {% endif %}
-        <input class="btn btn-primary align-self-end " type="submit"
-            value="{{button_text}}"
-        />
+    <div>
+    <div class="d-flex justify-content-between mb-4">
+        <div class="d-flex justify-content-start">
+            {% if task_id %}
+                <input name="delete" type="submit" class="btn btn-outline-danger align-self-end me-2" value="Удалить задачу"/>
+            {% elif course_id %}
+                <input name="delete" type="submit" class="btn btn-outline-danger align-self-end me-2" value="Удалить курс"/>
+            {% endif %}
+        </div>
+    
+        <div class="d-flex justify-content-end">
+            {% if task_id %}
+            <a class="btn btn-outline-primary align-self-end me-2" href="{% url 'task_formulas' task_id=task_id %}">Перейти к формулам</a>
+            {% elif course_id %}
+            <a class="btn btn-outline-primary align-self-end me-2" href="{% url 'course-tasks' course_id=course_id %}">Перейти к лабораторным</a>
+            {% endif %}
+            <input name="edit" class="btn btn-primary align-self-end" type="submit" value="{{button_text}}" />
+        </div>
+    </div>  
     </div>
 </form>
 <script src="https://cdn.tiny.cloud/1/egqao2izbex2h6fh3c9dxjlimuy91hh5xl0bvl7p6ce5jd1v/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
@@ -59,6 +77,8 @@
         image_title: true,
         automatic_uploads: true,
     });
+
+    FilePond.registerPlugin(FilePondPluginFileValidateType);
 
     FilePond.setOptions({
         server: {
@@ -89,13 +109,14 @@
                 headers: {"X-CSRFToken": $crf_token},
             }
         },
-        allowMultiple: true,
-        name:"attachments"
+
     })
+
 
     const pond = FilePond.create(document.querySelector('#InputFiles'),{
         files: [
             {% for id in files %}
+
             {
                 // the server file reference
                 source: '{{id}}',
@@ -107,6 +128,25 @@
             },
             {% endfor %}
         ],
+        name:"attachments",
+        allowMultiple: true,
+    })
+    const pdfPond = FilePond.create(document.querySelector('#InputPdf'),{
+        {% if main_pdf != null%}
+        files: [
+            {
+                // the server file reference
+                source: '{{main_pdf}}',
+
+                // set type to limbo to tell FilePond this is a temp file
+                options: {
+                    type: 'limbo',
+                },
+            },
+        ],
+        {% endif %}
+        acceptedFileTypes: ["application/pdf"],
+        name:"mainPdf",
     })
 
     {% if groups != null %}
@@ -139,6 +179,17 @@
             AttchmentInputs[0].name+="[]"
             AttchmentInputs[0].value = total
         }
+
+        var PdfInputs = $("input[name='mainPdf']")
+        if (PdfInputs.length > 0){
+            var total = `${PdfInputs[0].value}`
+            for (var i = 1; i < PdfInputs.length; i++) {
+                total += `|${PdfInputs[i].value}`
+            }
+            PdfInputs[0].name+="[]"
+            PdfInputs[0].value = total
+        }
+
         return true
     });
 </script>

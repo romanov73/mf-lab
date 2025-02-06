@@ -15,7 +15,7 @@ from web_page.utils import for_teacher
 
 ATTACHMENTS_DIR = os.path.join("storage", "files")
 IMAGE_DIR = os.path.join("storage", "files", "images")
-
+PDF_PREFIX = "PDF_RENDER"
 
 @login_required
 @for_teacher()
@@ -43,8 +43,13 @@ def remove_attachment(request):
 @login_required
 @for_teacher()
 def upload_attachment(request):
-    file = request.FILES.getlist("attachments")[0]
-    file_obj: File = File(path="None", file_name=file.name)
+    if request.FILES.getlist("mainPdf"):
+        file = request.FILES.getlist("mainPdf")[0]
+        file_obj: File = File(path="None", file_name=PDF_PREFIX + file.name)
+    else:
+        file = request.FILES.getlist("attachments")[0]
+        file_obj: File = File(path="None", file_name=file.name)
+
     file_obj.save()
     file_obj.path = os.path.join(ATTACHMENTS_DIR, str(file_obj.id))
     default_storage.save(file_obj.path, ContentFile(file.read()))
@@ -81,3 +86,13 @@ def get_file(request, file_id: int):
     path = os.path.join(ATTACHMENTS_DIR, str(file_id))
     file = default_storage.open(path)
     return HttpResponse(file)
+
+@login_required
+def get_pdf(request, file_id: int):
+    path = os.path.join(ATTACHMENTS_DIR, str(file_id))
+    file = default_storage.open(path)
+    return FileResponse(
+        open(path, 'rb'),
+        content_type='application/pdf',
+        headers={'Content-Disposition': 'inline; filename="document.pdf"'}
+    )
