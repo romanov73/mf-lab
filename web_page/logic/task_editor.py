@@ -21,7 +21,10 @@ def task_editor(request, course_id: int, task_id: int | None):
         if task_id is None:
             return add_task_action(request, course_id)
         else:
-            return update_task_action(request, course_id, task_id)
+            if "delete" in request.POST:
+                return delete_task_action(request, course_id, task_id)
+            elif "edit" in request.POST:
+                return update_task_action(request, course_id, task_id)
 
 
 def create_task_view(request, course_id: int):
@@ -108,3 +111,9 @@ def update_task_action(request, course_id: int, task_id: int):
 
     return redirect("edit_task", course_id, task_id)
 
+
+def delete_task_action(request, course_id: int, task_id: int):
+    task: Task = get_object_or_404(Task, id=task_id)
+    task.delete()
+
+    return redirect("course-tasks", course_id)

@@ -26,9 +26,12 @@ def course_editor(request, course_id: int | None):
     elif request.method == "POST":
         if course_id is None:
             return add_course_action(request)
-
         else:
-            return update_course_action(request, course_id)
+            if "delete" in request.POST:
+                return delete_course_action(request, course_id)
+            elif "edit" in request.POST:
+                return update_course_action(request, course_id)
+
 
 
 def create_course_view(request):
@@ -111,3 +114,10 @@ def update_course_action(request, id):
                     file.save()
 
     return redirect("edit_course", id)
+
+
+def delete_course_action(request, id):
+    course: Course = get_object_or_404(Course, id=id)
+    course.delete()
+
+    return redirect("created_courses")

@@ -325,7 +325,7 @@ def task_formulas(request, task_id: int):
                       'has_empty': '' in map(lambda x: x.expression, task.formula_set.all()),
                       'task_id': task.id
                   }
-                  )
+    )
 
 
 @login_required
