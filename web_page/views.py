@@ -309,6 +309,145 @@ def _build_lab2_mode2_chart_data() -> dict:
     }
 
 
+LAB3_TC_COEFFS = {
+        "TiAlMe2N": {
+            "МК8": {
+                "Fe": {"A0": 16.48, "A1": 10.83, "A2": -2.39, "A3": -1.92},
+                "Cr": {"A0": 16.48, "A1": 3.306, "A2": -0.1777, "A3": -0.00153},
+                "Zr": {"A0": 16.48, "A1": 2.226, "A2": -0.0071, "A3": -0.00250},
+            },
+            "Р6М5К5": {
+                "Fe": {"A0": 8.03, "A1": 1.57, "A2": -0.65, "A3": -0.13},
+                "Cr": {"A0": 8.03, "A1": 2.828, "A2": -0.2263, "A3": 0.00536},
+                "Zr": {"A0": 8.03, "A1": 2.732, "A2": -0.0788, "A3": -0.00043},
+            },
+        },
+        "TiZrMe2N": {
+            "МК8": {
+                "Fe": {"A0": 13.80, "A1": 4.33, "A2": 5.68, "A3": -4.33},
+                "Cr": {"A0": 13.80, "A1": 2.191, "A2": 0.1435, "A3": -0.01998},
+                "Al": {"A0": 13.80, "A1": 7.170, "A2": -0.4277, "A3": 0},
+            },
+            "Р6М5К5": {
+                "Fe": {"A0": 6.79, "A1": 4.75, "A2": -1.84, "A3": -0.10},
+                "Cr": {"A0": 6.79, "A1": 2.011, "A2": -0.0678, "A3": -0.00357},
+                "Al": {"A0": 6.79, "A1": 5.543, "A2": -0.3137, "A3": 0},
+            },
+        },
+        "TiSiMe2N": {
+            "МК8": {
+                "Cr": {"A0": 24.18, "A1": 2.481, "A2": -0.1356, "A3": 0},
+                "Zr": {"A0": 24.18, "A1": 2.570, "A2": -0.0790, "A3": 0},
+                "Al": {"A0": 24.18, "A1": 5.240, "A2": -0.3071, "A3": 0},
+            },
+            "Р6М5К5": {
+                "Cr": {"A0": 11.29, "A1": 1.518, "A2": -0.0790, "A3": 0},
+                "Zr": {"A0": 11.29, "A1": 2.078, "A2": -0.06260, "A3": 0},
+                "Al": {"A0": 11.29, "A1": 3.948, "A2": -0.2225, "A3": 0},
+            },
+        },
+    }
+
+
+LAB3_J_COEFFS = {
+        '30XGSA': {
+            "TiAlMe2N": {
+                "МК8": {
+                    "Fe": {"A0": 0.249, "A1": -0.0166, "A2": -0.1008, "A3": 0.07},
+                    "Cr": {"A0": 0.249, "A1": -0.0135, "A2": 0.000666, "A3": 0.00000755},
+                    "Zr": {"A0": 0.249, "A1": -0.0070, "A2": 0.000013, "A3": 0.00000818},
+                },
+                "Р6М5К5": {
+                    "Fe": {"A0": 1.027, "A1": -0.0586, "A2": -0.7099, "A3": 0.5196},
+                    "Cr": {"A0": 1.027, "A1": -0.06834, "A2": 0.00523, "A3": -0.000000121},
+                    "Zr": {"A0": 1.027, "A1": -0.0213, "A2": -0.000838, "A3": 0.0000495},
+                },
+            },
+            "TiZrMe2N": {
+                "МК8": {
+                    "Fe": {"A0": 0.226, "A1": -0.0266, "A2": -0.0621, "A3": 0.0395},
+                    "Cr": {"A0": 0.226, "A1": -0.0026, "A2": -0.00174, "A3": 0.000135},
+                    "Al": {"A0": 0.226, "A1": -0.0239, "A2": 0.00149, "A3": 0},
+                },
+                "Р6М5К5": {
+                    "Fe": {"A0": 1.076, "A1": -0.1678, "A2": -0.3472, "A3": 0.2458},
+                    "Cr": {"A0": 1.076, "A1": -0.0725, "A2": 0.00413, "A3": 0.000011},
+                    "Al": {"A0": 1.076, "A1": -0.0881, "A2": 0.00475, "A3": 0},
+                },
+            },
+            "TiSiMe2N": {
+                "МК8": {
+                    "Cr": {"A0": 0.197, "A1": -0.0120, "A2": 0.00062, "A3": 0},
+                    "Zr": {"A0": 0.197, "A1": -0.0077, "A2": 0.00023, "A3": 0},
+                    "Al": {"A0": 0.197, "A1": -0.0164, "A2": 0.00096, "A3": 0},
+                },
+                "Р6М5К5": {
+                    "Cr": {"A0": 1.124, "A1": -0.0637, "A2": 0.00325, "A3": 0},
+                    "Zr": {"A0": 1.124, "A1": -0.0517, "A2": 0.00150, "A3": 0},
+                    "Al": {"A0": 1.124, "A1": -0.1087, "A2": 0.00637, "A3": 0},
+                },
+            },
+        },
+        '12X18N10T': {
+            "TiAlMe2N": {
+                "МК8": {
+                    "Fe": {"A0": 0.834, "A1": -0.4379, "A2": 0.4098, "A3": -0.1122},
+                    "Cr": {"A0": 0.834, "A1": -0.0497, "A2": 0.002743, "A3": 0.0001017},
+                    "Zr": {"A0": 0.834, "A1": -0.0442, "A2": 0.0022, "A3": -0.0000308},
+                },
+                "Р6М5К5": {
+                    "Fe": {"A0": 3.278, "A1": -0.7682, "A2": -0.5234, "A3": 0.6478},
+                    "Cr": {"A0": 3.278, "A1": -0.229, "A2": 0.01401, "A3": 0.000238},
+                    "Zr": {"A0": 3.278, "A1": -0.1526, "A2": 0.006213, "A3": -0.000056},
+                },
+            },
+            "TiZrMe2N": {
+                "МК8": {
+                    "Fe": {"A0": 0.826, "A1": -0.0324, "A2": -0.3617, "A3": 0.2261},
+                    "Cr": {"A0": 0.826, "A1": -0.0525, "A2": 0.00378, "A3": -0.000037},
+                    "Al": {"A0": 0.826, "A1": -0.0807, "A2": 0.00492, "A3": 0},
+                },
+                "Р6М5К5": {
+                    "Cr": {"A0": 3.094, "A1": -0.0848, "A2": -0.01032, "A3": 0.001268},
+                    "Al": {"A0": 3.094, "A1": -0.2220, "A2": 0.01313, "A3": 0},
+                },
+            },
+            "TiSiMe2N": {
+                "МК8": {
+                    "Cr": {"A0": 0.724, "A1": -0.0428, "A2": 0.00250, "A3": 0},
+                    "Zr": {"A0": 0.724, "A1": -0.0257, "A2": 0.00082, "A3": 0},
+                    "Al": {"A0": 0.724, "A1": -0.0500, "A2": 0.00280, "A3": 0},
+                },
+                "Р6М5К5": {
+                    "Cr": {"A0": 3.221, "A1": -0.1949, "A2": 0.01131, "A3": 0},
+                    "Zr": {"A0": 3.221, "A1": -0.1251, "A2": 0.0043, "A3": 0},
+                    "Al": {"A0": 3.221, "A1": -0.2024, "A2": 0.01164, "A3": 0},
+                },
+            },
+        }
+}
+
+
+def _build_lab3_graph_data(coating: str, tool_material: str, processed_material: str, alloying_element: str, content_range: tuple, points_count: int = 41) -> dict:
+    min_c, max_c = content_range
+    if points_count < 2:
+        points_count = 2
+
+    step = (max_c - min_c) / (points_count - 1)
+    c_values = [min_c + i * step for i in range(points_count)]
+
+    tc_coeffs = LAB3_TC_COEFFS[coating][tool_material][alloying_element]
+    # map processed_material to keys used in LAB3_J_COEFFS: '30XGSA' and '12X18N10T'
+    proc_key = '30XGSA' if processed_material == '30ХГСА' else '12X18N10T'
+    j_coeffs = LAB3_J_COEFFS[proc_key][coating][tool_material][alloying_element]
+
+    return {
+        'c_values': [round(value, 4) for value in c_values],
+        'tc_values': [round(_cubic_model(value, tc_coeffs), 8) for value in c_values],
+        'j_values': [round(_cubic_model(value, j_coeffs), 8) for value in c_values],
+    }
+
+
 LABS_DATA = [
     {
         'id': 1,
@@ -467,9 +606,69 @@ LABS_DATA = [
     {
         'id': 3,
         'title': 'Исследование циклической трещиностойкости и интенсивности изнашивания режущего инструмента',
-        'algorithm': ['Данные из ТЗ для этой лабораторной пока не переданы.'],
-        'form_fields': [],
-        'result_fields': [],
+        'algorithm': [
+            'выбирается покрытие: TiAlMe2N, TiZrMe2N, TiSiMe2N',
+            'выбирается инструментальный материал: МК8 или Р6М5К5',
+            'выбирается обрабатываемый материал: 30ХГСА или 12Х18Н10Т',
+            'выбирается легирующий элемент и его содержание C в допустимом диапазоне',
+            'определяются: циклическая трещиностойкость tц (мин) и интенсивность изнашивания J·10^4 (мм/м)',
+            'строятся графики tц(C) и J(C) по допустимому диапазону',
+        ],
+        'form_fields': [
+            {
+                'name': 'coating',
+                'label': 'износостойкое покрытие',
+                'type': 'select',
+                'options': ['TiAlMe2N', 'TiZrMe2N', 'TiSiMe2N'],
+            },
+            {
+                'name': 'tool_material',
+                'label': 'инструментальный материал',
+                'type': 'select',
+                'options': ['МК8', 'Р6М5К5'],
+            },
+            {
+                'name': 'processed_material',
+                'label': 'обрабатываемый материал',
+                'type': 'select',
+                'options': ['30ХГСА', '12Х18Н10Т'],
+            },
+            {
+                'name': 'alloying_element',
+                'label': 'легирующий элемент',
+                'type': 'select',
+                'options': ['Fe', 'Cr', 'Zr', 'Al'],
+            },
+            {
+                'name': 'alloying_content',
+                'label': 'содержание легирующего элемента, %',
+                'type': 'text',
+                'placeholder': 'Введите значение, %',
+            },
+        ],
+        'alloying_by_coating': {
+            'TiAlMe2N': ['Fe', 'Cr', 'Zr'],
+            'TiZrMe2N': ['Fe', 'Cr', 'Al'],
+            'TiSiMe2N': ['Cr', 'Zr', 'Al'],
+        },
+        'content_ranges': {
+            'TiAlMe2N': {
+                'Fe': (0.43, 1.22),
+                'Cr': (1.35, 11.12),
+                'Zr': (4.61, 23.39),
+            },
+            'TiZrMe2N': {
+                'Fe': (0.49, 0.94),
+                'Cr': (1.44, 11.28),
+                'Al': (6.36, 9.25),
+            },
+            'TiSiMe2N': {
+                'Cr': (6.12, 11.37),
+                'Zr': (7.81, 24.74),
+                'Al': (6.45, 9.16),
+            },
+        },
+        'result_fields': ['tц, мин', 'J·10^4, мм/м'],
     },
     {
         'id': 4,
@@ -551,6 +750,22 @@ def lab_page(request, lab_id: int):
             form_values['tool_material'] = tool_options[0]
         if composition_options:
             form_values['composition_coating'] = composition_options[0]
+
+        allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
+        if allowed_elements:
+            form_values['alloying_element'] = allowed_elements[0]
+
+    if request.method == 'GET' and lab_id == 3:
+        coating_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'coating'), [])
+        tool_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'tool_material'), [])
+        proc_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'processed_material'), [])
+
+        if coating_options:
+            form_values['coating'] = coating_options[0]
+        if tool_options:
+            form_values['tool_material'] = tool_options[0]
+        if proc_options:
+            form_values['processed_material'] = proc_options[0]
 
         allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
         if allowed_elements:
@@ -689,19 +904,74 @@ def lab_page(request, lab_id: int):
                 except KeyError:
                     error_message = 'Для выбранной комбинации отсутствуют коэффициенты расчета.'
 
-        if error_message is None and selected_mode == mode2_name:
-            composition_coating = form_values.get('composition_coating', '')
-            if composition_coating not in LAB2_COMPOSITION_RESULTS:
-                error_message = 'Выберите покрытие для исследования влияния состава.'
+    if request.method == 'POST' and lab_id == 3:
+        for field in lab.get('form_fields', []):
+            name = field.get('name')
+            form_values[name] = request.POST.get(name, '').strip()
+
+        coating = form_values.get('coating', '')
+        tool_material = form_values.get('tool_material', '')
+        processed_material = form_values.get('processed_material', '')
+        alloying_element = form_values.get('alloying_element', '')
+        content_raw = form_values.get('alloying_content', '')
+
+        if not coating:
+            error_message = 'Выберите износостойкое покрытие.'
+        elif not tool_material:
+            error_message = 'Выберите инструментальный материал.'
+        elif not processed_material:
+            error_message = 'Выберите обрабатываемый материал.'
+        elif not alloying_element:
+            error_message = 'Выберите легирующий элемент.'
+        else:
+            allowed_elements = lab.get('alloying_by_coating', {}).get(coating, [])
+            if alloying_element not in allowed_elements:
+                error_message = 'Выбранный легирующий элемент недоступен для указанного покрытия.'
+
+        content_value = None
+        if error_message is None:
+            try:
+                content_value = float(content_raw.replace(',', '.'))
+            except ValueError:
+                error_message = 'Содержание легирующего элемента должно быть числом.'
+
+        if error_message is None:
+            content_range = lab.get('content_ranges', {}).get(coating, {}).get(alloying_element)
+            if content_range is None:
+                error_message = 'Для выбранной пары покрытие + легирующий элемент диапазон не задан.'
             else:
-                values = LAB2_COMPOSITION_RESULTS[composition_coating]
+                min_value, max_value = content_range
+                if not (min_value <= content_value <= max_value):
+                    error_message = (
+                        f'Содержание легирующего элемента должно быть в диапазоне '
+                        f'{min_value:.2f}-{max_value:.2f} %.'
+                    )
+
+        if error_message is None:
+            try:
+                tc_coeffs = LAB3_TC_COEFFS[coating][tool_material][alloying_element]
+                tc_value = _cubic_model(content_value, tc_coeffs)
+
+                proc_key = '30XGSA' if processed_material == '30ХГСА' else '12X18N10T'
+                j_coeffs = LAB3_J_COEFFS[proc_key][coating][tool_material][alloying_element]
+                j_value = _cubic_model(content_value, j_coeffs)
+
                 calculated_results = {
-                    'микротвердость Hµ, ГПа': f"{values['hmu']:.3f}",
-                    'модуль упругости E, ГПа': f"{values['e']:.3f}",
-                    'трещиностойкость KICП, МПа·м^1/2': f"{values['kicp']:.3f}",
-                    'коэффициент отслоения K0': f"{values['k0']:.3f}",
+                    'tц, мин': f'{tc_value:.3f}',
+                    'J·10^4, мм/м': f'{j_value:.3f}',
                 }
-                graph_data = _build_lab2_mode2_chart_data()
+
+                graph_data = _build_lab3_graph_data(
+                    coating=coating,
+                    tool_material=tool_material,
+                    processed_material=processed_material,
+                    alloying_element=alloying_element,
+                    content_range=lab['content_ranges'][coating][alloying_element],
+                )
+            except KeyError:
+                error_message = 'Для выбранной комбинации отсутствуют коэффициенты расчета.'
+
+    
 
     result_items = _build_result_items(lab, calculated_results)
     form_fields = _build_form_fields_with_values(lab, form_values)

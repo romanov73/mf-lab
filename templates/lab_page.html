@@ -58,7 +58,7 @@
             placeholder="{{ field.placeholder }}"
             value="{{ field.current_value }}"
           />
-          {% if lab.id == 1 or lab.id == 2 %}
+          {% if lab.id == 1 or lab.id == 2 or lab.id == 3 %}
           {% if field.name == 'alloying_content' %}
           <div id="alloying-content-range" class="form-text text-muted">Допустимый диапазон: -</div>
           {% endif %}
@@ -172,6 +172,21 @@
         </div>
       </div>
       {% endif %}
+    {% elif graph_data and lab.id == 3 %}
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <div class="p-2 border rounded bg-light">
+          <p class="mb-2 text-muted">tц(C)</p>
+          <canvas id="chart-lab3-tc" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="p-2 border rounded bg-light">
+          <p class="mb-2 text-muted">J(C)</p>
+          <canvas id="chart-lab3-j" height="180"></canvas>
+        </div>
+      </div>
+    </div>
     {% else %}
     <div class="p-3 border rounded bg-light text-muted">
       Область для вывода графиков.
@@ -182,7 +197,7 @@
 {% endblock %}
 
 {% block scripts %}
-{% if lab.id == 1 or lab.id == 2 %}
+{% if lab.id == 1 or lab.id == 2 or lab.id == 3 %}
 {% if lab.alloying_by_coating and lab.content_ranges %}
 {{ lab.alloying_by_coating|json_script:"alloying-by-coating-data" }}
 {{ lab.content_ranges|json_script:"content-ranges-data" }}
@@ -249,6 +264,63 @@
   })();
 </script>
 {% endif %}
+{% endif %}
+
+{% if lab.id == 3 and graph_data %}
+{{ graph_data|json_script:"lab3-graph-data" }}
+<script>
+  (function () {
+    const graphDataNode = document.getElementById("lab3-graph-data");
+    if (!graphDataNode) return;
+    const graphData = JSON.parse(graphDataNode.textContent);
+
+    function drawLineChart(canvasId, xValues, yValues, color) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || !xValues || !yValues || xValues.length !== yValues.length || xValues.length === 0) return;
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const paddingLeft = 38;
+      const paddingRight = 10;
+      const paddingTop = 10;
+      const paddingBottom = 24;
+      const plotWidth = width - paddingLeft - paddingRight;
+      const plotHeight = height - paddingTop - paddingBottom;
+      const minX = Math.min.apply(null, xValues);
+      const maxX = Math.max.apply(null, xValues);
+      const minY = Math.min.apply(null, yValues);
+      const maxY = Math.max.apply(null, yValues);
+      const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
+      const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
+      ctx.clearRect(0, 0, width, height);
+      ctx.strokeStyle = "#9aa1a8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, paddingTop);
+      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
+      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
+      ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < xValues.length; i++) {
+        const x = paddingLeft + ((xValues[i] - minX) / xSpan) * plotWidth;
+        const y = paddingTop + plotHeight - ((yValues[i] - minY) / ySpan) * plotHeight;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.fillStyle = "#6c757d";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(String(minX).replace(".", ","), paddingLeft - 8, height - 6);
+      ctx.fillText(String(maxX).replace(".", ","), paddingLeft + plotWidth - 22, height - 6);
+      ctx.fillText(String(minY).replace(".", ","), 2, paddingTop + plotHeight + 4);
+      ctx.fillText(String(maxY).replace(".", ","), 2, paddingTop + 10);
+    }
+
+    drawLineChart("chart-lab3-tc", graphData.c_values, graphData.tc_values, "#0d6efd");
+    drawLineChart("chart-lab3-j", graphData.c_values, graphData.j_values, "#dc3545");
+  })();
+</script>
 {% endif %}
 
 {% if lab.id == 2 and lab.research_modes %}
