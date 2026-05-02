@@ -27,6 +27,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', web_page.views.index, name='main'),
+    path('labs/', web_page.views.labs_list, name='labs_list'),
+    path('labs/<int:lab_id>/', web_page.views.lab_page, name='lab_page'),
     path('login', user_login_contoroller.login, name='login'),
     path('logout', user_login_contoroller.logout, name='logout'),
     path('groups', web_page.views.groups_list, name='groups_list'),

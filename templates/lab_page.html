@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex mb-3 justify-content-between">
+  <span class="d-inline-block fw-bold h5">{{ lab.title }}</span>
+  <a href="{% url 'labs_list' %}" class="btn btn-outline-primary btn-sm">К списку лабораторных</a>
+</div>
+
+{% if error_message %}
+<div class="alert alert-danger" role="alert">
+  {{ error_message }}
+</div>
+{% endif %}
+
+<div class="bg-light px-2 py-1 mb-3">
+  <div class="border border-primary rounded bg-white p-3 mb-3">
+    <p class="mb-2 h6">Алгоритм выполнения</p>
+    <ol class="mb-0">
+      {% for step in lab.algorithm %}
+      <li>{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  {% if lab.notes %}
+  <div class="border border-primary rounded bg-white p-3 mb-3">
+    <p class="mb-2 h6">Диапазоны содержания легирующих элементов</p>
+    <ul class="mb-0">
+      {% for note in lab.notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="border border-primary rounded bg-white p-3 mb-3">
+    <p class="mb-3 h6">Форма ввода данных</p>
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form_fields %}
+        {% for field in form_fields %}
+        <div class="mb-3">
+          <label class="form-label">{{ field.label }}</label>
+
+          {% if field.type == 'select' %}
+          <select class="form-control border-black" id="id_{{ field.name }}" name="{{ field.name }}">
+            {% for option in field.options %}
+            <option value="{{ option }}" {% if field.current_value == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input
+            type="text"
+            class="form-control border-black"
+            id="id_{{ field.name }}"
+            name="{{ field.name }}"
+            placeholder="{{ field.placeholder }}"
+            value="{{ field.current_value }}"
+          />
+          {% if lab.id == 1 and field.name == 'alloying_content' %}
+          <div id="alloying-content-range" class="form-text text-muted">Допустимый диапазон: -</div>
+          {% endif %}
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="p-3 border rounded bg-light text-muted mb-3">
+        Данные формы для этой лабораторной пока не переданы.
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary">Вычислить</button>
+    </form>
+  </div>
+
+  <div class="border border-primary rounded bg-white p-3 mb-3">
+    <p class="mb-2 h6">Результаты и графики</p>
+
+    {% if result_items %}
+    <div class="row g-2 mb-3">
+      {% for result_item in result_items %}
+      <div class="col-md-4">
+        <div class="p-2 border rounded bg-light text-muted">
+          {{ result_item.label }}: {{ result_item.value }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-3 border rounded bg-light text-muted mb-3">
+      Данные результатов для этой лабораторной пока не переданы.
+    </div>
+    {% endif %}
+
+    {% if graph_data %}
+    <div class="row g-3">
+      <div class="col-12 col-lg-4">
+        <div class="p-2 border rounded bg-light">
+          <p class="mb-2 text-muted">a(C)</p>
+          <canvas id="chart-a" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="p-2 border rounded bg-light">
+          <p class="mb-2 text-muted">β111(C)</p>
+          <canvas id="chart-beta" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="p-2 border rounded bg-light">
+          <p class="mb-2 text-muted">σ0(C)</p>
+          <canvas id="chart-sigma" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="p-3 border rounded bg-light text-muted">
+      Область для вывода графиков.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if lab.id == 1 and lab.alloying_by_coating and lab.content_ranges %}
+{{ lab.alloying_by_coating|json_script:"alloying-by-coating-data" }}
+{{ lab.content_ranges|json_script:"content-ranges-data" }}
+<script>
+  (function () {
+    const coatingSelect = document.getElementById("id_coating");
+    const elementSelect = document.getElementById("id_alloying_element");
+    const rangeHint = document.getElementById("alloying-content-range");
+
+    if (!coatingSelect || !elementSelect || !rangeHint) {
+      return;
+    }
+
+    const alloyingByCoating = JSON.parse(
+      document.getElementById("alloying-by-coating-data").textContent
+    );
+    const contentRanges = JSON.parse(
+      document.getElementById("content-ranges-data").textContent
+    );
+
+    function refreshElements() {
+      const coating = coatingSelect.value;
+      const options = alloyingByCoating[coating] || [];
+      const previousValue = elementSelect.value;
+
+      elementSelect.innerHTML = "";
+
+      options.forEach(function (optionValue) {
+        const option = document.createElement("option");
+        option.value = optionValue;
+        option.textContent = optionValue;
+        elementSelect.appendChild(option);
+      });
+
+      if (options.indexOf(previousValue) !== -1) {
+        elementSelect.value = previousValue;
+      }
+    }
+
+    function refreshRange() {
+      const coating = coatingSelect.value;
+      const element = elementSelect.value;
+      const rangeValues = (contentRanges[coating] || {})[element] || null;
+
+      if (!rangeValues || rangeValues.length !== 2) {
+        rangeHint.textContent = "Допустимый диапазон: -";
+        return;
+      }
+
+      const minValue = String(rangeValues[0]).replace(".", ",");
+      const maxValue = String(rangeValues[1]).replace(".", ",");
+      rangeHint.textContent = "Допустимый диапазон: " + minValue + "-" + maxValue + " %";
+    }
+
+    coatingSelect.addEventListener("change", function () {
+      refreshElements();
+      refreshRange();
+    });
+
+    elementSelect.addEventListener("change", refreshRange);
+
+    refreshElements();
+    refreshRange();
+  })();
+</script>
+{% endif %}
+
+{% if lab.id == 1 and graph_data %}
+{{ graph_data|json_script:"lab1-graph-data" }}
+<script>
+  (function () {
+    const graphDataNode = document.getElementById("lab1-graph-data");
+
+    if (!graphDataNode) {
+      return;
+    }
+
+    const graphData = JSON.parse(graphDataNode.textContent);
+
+    function drawLineChart(canvasId, xValues, yValues, color) {
+      const canvas = document.getElementById(canvasId);
+
+      if (!canvas || !xValues || !yValues || xValues.length !== yValues.length || xValues.length === 0) {
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const paddingLeft = 38;
+      const paddingRight = 10;
+      const paddingTop = 10;
+      const paddingBottom = 24;
+
+      const plotWidth = width - paddingLeft - paddingRight;
+      const plotHeight = height - paddingTop - paddingBottom;
+
+      const minX = Math.min.apply(null, xValues);
+      const maxX = Math.max.apply(null, xValues);
+      const minY = Math.min.apply(null, yValues);
+      const maxY = Math.max.apply(null, yValues);
+
+      const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
+      const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#9aa1a8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, paddingTop);
+      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
+      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
+      ctx.stroke();
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      for (let i = 0; i < xValues.length; i++) {
+        const x = paddingLeft + ((xValues[i] - minX) / xSpan) * plotWidth;
+        const y = paddingTop + plotHeight - ((yValues[i] - minY) / ySpan) * plotHeight;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+
+      ctx.fillStyle = "#6c757d";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(String(minX).replace(".", ","), paddingLeft - 8, height - 6);
+      ctx.fillText(String(maxX).replace(".", ","), paddingLeft + plotWidth - 22, height - 6);
+      ctx.fillText(String(minY).replace(".", ","), 2, paddingTop + plotHeight + 4);
+      ctx.fillText(String(maxY).replace(".", ","), 2, paddingTop + 10);
+    }
+
+    drawLineChart("chart-a", graphData.c_values, graphData.a_values, "#0d6efd");
+    drawLineChart("chart-beta", graphData.c_values, graphData.beta_values, "#198754");
+    drawLineChart("chart-sigma", graphData.c_values, graphData.sigma_values, "#dc3545");
+  })();
+</script>
+{% endif %}
+{% endblock %}
