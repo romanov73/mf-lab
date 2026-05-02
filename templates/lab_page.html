@@ -40,7 +40,7 @@
 
       {% if form_fields %}
         {% for field in form_fields %}
-        <div class="mb-3">
+        <div class="mb-3" data-field-name="{{ field.name }}">
           <label class="form-label">{{ field.label }}</label>
 
           {% if field.type == 'select' %}
@@ -58,8 +58,10 @@
             placeholder="{{ field.placeholder }}"
             value="{{ field.current_value }}"
           />
-          {% if lab.id == 1 and field.name == 'alloying_content' %}
+          {% if lab.id == 1 or lab.id == 2 %}
+          {% if field.name == 'alloying_content' %}
           <div id="alloying-content-range" class="form-text text-muted">Допустимый диапазон: -</div>
+          {% endif %}
           {% endif %}
           {% endif %}
         </div>
@@ -93,7 +95,7 @@
     </div>
     {% endif %}
 
-    {% if graph_data %}
+    {% if graph_data and lab.id == 1 %}
     <div class="row g-3">
       <div class="col-12 col-lg-4">
         <div class="p-2 border rounded bg-light">
@@ -114,6 +116,62 @@
         </div>
       </div>
     </div>
+    {% elif graph_data and lab.id == 2 %}
+      {% if graph_data.mode == 'mode1' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Hµ(C)</p>
+            <canvas id="chart-hmu" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">E(C)</p>
+            <canvas id="chart-e" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">KICП(C)</p>
+            <canvas id="chart-kicp" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">K0(C)</p>
+            <canvas id="chart-k0" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+      {% elif graph_data.mode == 'mode2' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Hµ по покрытиям</p>
+            <canvas id="chart-comp-hmu" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">E по покрытиям</p>
+            <canvas id="chart-comp-e" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">KICП по покрытиям</p>
+            <canvas id="chart-comp-kicp" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">K0 по покрытиям</p>
+            <canvas id="chart-comp-k0" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     {% else %}
     <div class="p-3 border rounded bg-light text-muted">
       Область для вывода графиков.
@@ -124,7 +182,8 @@
 {% endblock %}
 
 {% block scripts %}
-{% if lab.id == 1 and lab.alloying_by_coating and lab.content_ranges %}
+{% if lab.id == 1 or lab.id == 2 %}
+{% if lab.alloying_by_coating and lab.content_ranges %}
 {{ lab.alloying_by_coating|json_script:"alloying-by-coating-data" }}
 {{ lab.content_ranges|json_script:"content-ranges-data" }}
 <script>
@@ -187,6 +246,55 @@
 
     refreshElements();
     refreshRange();
+  })();
+</script>
+{% endif %}
+{% endif %}
+
+{% if lab.id == 2 and lab.research_modes %}
+{{ lab.research_modes|json_script:"lab2-research-modes" }}
+<script>
+  (function () {
+    const modeSelect = document.getElementById("id_research_mode");
+    const form = modeSelect ? modeSelect.closest("form") : null;
+
+    if (!modeSelect || !form) {
+      return;
+    }
+
+    const modeNames = JSON.parse(
+      document.getElementById("lab2-research-modes").textContent
+    );
+
+    const fieldRows = {
+      coating: form.querySelector('[data-field-name="coating"]'),
+      tool_material: form.querySelector('[data-field-name="tool_material"]'),
+      alloying_element: form.querySelector('[data-field-name="alloying_element"]'),
+      alloying_content: form.querySelector('[data-field-name="alloying_content"]'),
+      composition_coating: form.querySelector('[data-field-name="composition_coating"]')
+    };
+
+    function toggleField(fieldNode, isVisible) {
+      if (!fieldNode) {
+        return;
+      }
+      fieldNode.style.display = isVisible ? "block" : "none";
+    }
+
+    function refreshModeView() {
+      const modeValue = modeSelect.value;
+      const isMode1 = modeValue === modeNames.mode1;
+      const isMode2 = modeValue === modeNames.mode2;
+
+      toggleField(fieldRows.coating, isMode1);
+      toggleField(fieldRows.tool_material, isMode1);
+      toggleField(fieldRows.alloying_element, isMode1);
+      toggleField(fieldRows.alloying_content, isMode1);
+      toggleField(fieldRows.composition_coating, isMode2);
+    }
+
+    modeSelect.addEventListener("change", refreshModeView);
+    refreshModeView();
   })();
 </script>
 {% endif %}
@@ -267,6 +375,148 @@
     drawLineChart("chart-a", graphData.c_values, graphData.a_values, "#0d6efd");
     drawLineChart("chart-beta", graphData.c_values, graphData.beta_values, "#198754");
     drawLineChart("chart-sigma", graphData.c_values, graphData.sigma_values, "#dc3545");
+  })();
+</script>
+{% endif %}
+
+{% if lab.id == 2 and graph_data %}
+{{ graph_data|json_script:"lab2-graph-data" }}
+<script>
+  (function () {
+    const graphDataNode = document.getElementById("lab2-graph-data");
+
+    if (!graphDataNode) {
+      return;
+    }
+
+    const graphData = JSON.parse(graphDataNode.textContent);
+
+    function drawLineChart(canvasId, xValues, yValues, color) {
+      const canvas = document.getElementById(canvasId);
+
+      if (!canvas || !xValues || !yValues || xValues.length !== yValues.length || xValues.length === 0) {
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const paddingLeft = 38;
+      const paddingRight = 10;
+      const paddingTop = 10;
+      const paddingBottom = 24;
+
+      const plotWidth = width - paddingLeft - paddingRight;
+      const plotHeight = height - paddingTop - paddingBottom;
+
+      const minX = Math.min.apply(null, xValues);
+      const maxX = Math.max.apply(null, xValues);
+      const minY = Math.min.apply(null, yValues);
+      const maxY = Math.max.apply(null, yValues);
+
+      const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
+      const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#9aa1a8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, paddingTop);
+      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
+      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
+      ctx.stroke();
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      for (let i = 0; i < xValues.length; i++) {
+        const x = paddingLeft + ((xValues[i] - minX) / xSpan) * plotWidth;
+        const y = paddingTop + plotHeight - ((yValues[i] - minY) / ySpan) * plotHeight;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+
+      ctx.fillStyle = "#6c757d";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(String(minX).replace(".", ","), paddingLeft - 8, height - 6);
+      ctx.fillText(String(maxX).replace(".", ","), paddingLeft + plotWidth - 22, height - 6);
+      ctx.fillText(String(minY).replace(".", ","), 2, paddingTop + plotHeight + 4);
+      ctx.fillText(String(maxY).replace(".", ","), 2, paddingTop + 10);
+    }
+
+    function drawBarChart(canvasId, labels, values, color) {
+      const canvas = document.getElementById(canvasId);
+
+      if (!canvas || !labels || !values || labels.length !== values.length || labels.length === 0) {
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const paddingLeft = 36;
+      const paddingRight = 10;
+      const paddingTop = 10;
+      const paddingBottom = 36;
+
+      const plotWidth = width - paddingLeft - paddingRight;
+      const plotHeight = height - paddingTop - paddingBottom;
+      const maxY = Math.max.apply(null, values);
+      const ySpan = maxY <= 0 ? 1 : maxY;
+      const slotWidth = plotWidth / values.length;
+      const barWidth = slotWidth * 0.6;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#9aa1a8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, paddingTop);
+      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
+      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
+      ctx.stroke();
+
+      for (let i = 0; i < values.length; i++) {
+        const value = values[i];
+        const barHeight = (value / ySpan) * plotHeight;
+        const x = paddingLeft + i * slotWidth + (slotWidth - barWidth) / 2;
+        const y = paddingTop + plotHeight - barHeight;
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, barWidth, barHeight);
+
+        ctx.fillStyle = "#6c757d";
+        ctx.font = "10px sans-serif";
+        ctx.fillText(String(labels[i]), x, paddingTop + plotHeight + 14);
+      }
+
+      ctx.fillStyle = "#6c757d";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("0", 6, paddingTop + plotHeight + 4);
+      ctx.fillText(String(Math.round(maxY * 100) / 100).replace(".", ","), 2, paddingTop + 10);
+    }
+
+    if (graphData.mode === "mode1") {
+      drawLineChart("chart-hmu", graphData.c_values, graphData.hmu_values, "#0d6efd");
+      drawLineChart("chart-e", graphData.c_values, graphData.e_values, "#198754");
+      drawLineChart("chart-kicp", graphData.c_values, graphData.kicp_values, "#dc3545");
+      drawLineChart("chart-k0", graphData.c_values, graphData.k0_values, "#fd7e14");
+    }
+
+    if (graphData.mode === "mode2") {
+      drawBarChart("chart-comp-hmu", graphData.coatings, graphData.hmu_values, "#0d6efd");
+      drawBarChart("chart-comp-e", graphData.coatings, graphData.e_values, "#198754");
+      drawBarChart("chart-comp-kicp", graphData.coatings, graphData.kicp_values, "#dc3545");
+      drawBarChart("chart-comp-k0", graphData.coatings, graphData.k0_values, "#fd7e14");
+    }
   })();
 </script>
 {% endif %}

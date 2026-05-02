@@ -113,6 +113,15 @@ def _quadratic_model(c_value: float, coeffs: dict) -> float:
     return coeffs['A0'] + coeffs['A1'] * c_value + coeffs['A2'] * (c_value ** 2)
 
 
+def _cubic_model(c_value: float, coeffs: dict) -> float:
+    return (
+        coeffs['A0']
+        + coeffs['A1'] * c_value
+        + coeffs['A2'] * (c_value ** 2)
+        + coeffs.get('A3', 0) * (c_value ** 3)
+    )
+
+
 def _build_result_items(lab: dict, calculated_results: dict | None = None) -> list:
     calculated_results = calculated_results or {}
     return [
@@ -130,7 +139,7 @@ def _build_form_fields_with_values(lab: dict, form_values: dict) -> list:
     for field in lab.get('form_fields', []):
         prepared = field.copy()
 
-        if lab.get('id') == 1 and field.get('name') == 'alloying_element':
+        if lab.get('id') in (1, 2) and field.get('name') == 'alloying_element':
             allowed_elements = lab.get('alloying_by_coating', {}).get(selected_coating, field.get('options', []))
             prepared['options'] = allowed_elements
 
@@ -160,6 +169,143 @@ def _build_lab1_graph_data(coating: str, tool_material: str, alloying_element: s
         'a_values': [round(_quadratic_model(value, a_coeffs), 8) for value in c_values],
         'beta_values': [round(_quadratic_model(value, beta_coeffs), 8) for value in c_values],
         'sigma_values': [round(_quadratic_model(value, sigma_coeffs), 8) for value in c_values],
+    }
+
+
+LAB2_HMU_COEFFS = {
+    "TiAlMe2N": {
+        "Fe": {"A0": 38.39, "A1": 12.68, "A2": -9.32, "A3": 2.04},
+        "Cr": {"A0": 38.39, "A1": 2.347, "A2": -0.1820, "A3": 0.00264},
+        "Zr": {"A0": 38.39, "A1": 1.109, "A2": -0.0405, "A3": 0.00028},
+    },
+    "TiZrMe2N": {
+        "Fe": {"A0": 38.65, "A1": 4.47, "A2": 0.33, "A3": -1.21},
+        "Cr": {"A0": 38.65, "A1": 1.216, "A2": -0.0164, "A3": -0.00350},
+        "Al": {"A0": 38.65, "A1": 1.716, "A2": -0.0950, "A3": 0},
+    },
+    "TiSiMe2N": {
+        "Cr": {"A0": 34.67, "A1": 1.219, "A2": -0.0624, "A3": 0},
+        "Zr": {"A0": 34.67, "A1": 0.880, "A2": -0.0246, "A3": 0},
+        "Al": {"A0": 34.67, "A1": 2.077, "A2": -0.1257, "A3": 0},
+    },
+}
+
+LAB2_K0_COEFFS = {
+    "TiAlMe2N": {
+        "МК8": {
+            "Fe": {"A0": 0.907, "A1": -0.177, "A2": 0.070, "A3": 0},
+            "Cr": {"A0": 0.907, "A1": 0.0698, "A2": -0.00344, "A3": 0},
+            "Zr": {"A0": 0.907, "A1": 0.0398, "A2": -0.00087, "A3": 0},
+        },
+        "Р6М5К5": {
+            "Fe": {"A0": 0.295, "A1": -0.088, "A2": 0.029, "A3": 0},
+            "Cr": {"A0": 0.295, "A1": 0.0228, "A2": -0.00102, "A3": 0},
+            "Zr": {"A0": 0.295, "A1": 0.0096, "A2": -0.00021, "A3": 0},
+        },
+    },
+    "TiZrMe2N": {
+        "МК8": {
+            "Fe": {"A0": 1.316, "A1": -0.515, "A2": 0.206, "A3": -0.008},
+            "Cr": {"A0": 1.316, "A1": 0.0780, "A2": -0.00840, "A3": 0.000312},
+            "Al": {"A0": 1.316, "A1": -0.0980, "A2": 0.00552, "A3": 0},
+        },
+        "Р6М5К5": {
+            "Fe": {"A0": 0.478, "A1": -0.187, "A2": 0.079, "A3": 0},
+            "Cr": {"A0": 0.478, "A1": 0.0349, "A2": -0.00169, "A3": 0},
+            "Al": {"A0": 0.478, "A1": -0.0276, "A2": 0.00144, "A3": 0},
+        },
+    },
+    "TiSiMe2N": {
+        "МК8": {
+            "Cr": {"A0": 1.493, "A1": 0.0684, "A2": -0.00268, "A3": 0},
+            "Zr": {"A0": 1.493, "A1": 0.0172, "A2": -0.00031, "A3": 0},
+            "Al": {"A0": 1.493, "A1": -0.0652, "A2": 0.00334, "A3": 0},
+        },
+        "Р6М5К5": {
+            "Cr": {"A0": 0.531, "A1": 0.0260, "A2": -0.00124, "A3": 0},
+            "Zr": {"A0": 0.531, "A1": 0.0083, "A2": -0.00020, "A3": 0},
+            "Al": {"A0": 0.531, "A1": -0.0294, "A2": 0.00156, "A3": 0},
+        },
+    },
+}
+
+LAB2_E_COEFFS = {
+    "TiAlMe2N": {
+        "Fe": {"A0": 369, "A1": 39.2, "A2": -22.7, "A3": 4.9},
+        "Cr": {"A0": 369, "A1": 7.09, "A2": -0.325, "A3": -0.0034},
+        "Zr": {"A0": 369, "A1": 7.30, "A2": -0.335, "A3": 0.0049},
+    },
+    "TiZrMe2N": {
+        "Fe": {"A0": 379, "A1": 7.2, "A2": 10.5, "A3": -8.5},
+        "Cr": {"A0": 379, "A1": 5.96, "A2": -0.283, "A3": -0.0037},
+        "Al": {"A0": 379, "A1": 11.49, "A2": -0.669, "A3": 0},
+    },
+    "TiSiMe2N": {
+        "Cr": {"A0": 350, "A1": 7.78, "A2": -0.391, "A3": 0},
+        "Zr": {"A0": 350, "A1": 6.87, "A2": -0.191, "A3": 0},
+        "Al": {"A0": 350, "A1": 15.35, "A2": -0.865, "A3": 0},
+    },
+}
+
+LAB2_KICP_COEFFS = {
+    "TiAlMe2N": {
+        "Fe": {"A0": 14.77, "A1": -1.67, "A2": 1.61, "A3": -0.33},
+        "Cr": {"A0": 14.77, "A1": -0.194, "A2": 0.0125, "A3": 0.00028},
+        "Zr": {"A0": 14.77, "A1": 0.095, "A2": -0.0023, "A3": 0},
+    },
+    "TiZrMe2N": {
+        "Fe": {"A0": 14.44, "A1": -0.92, "A2": 0.37, "A3": 0},
+        "Cr": {"A0": 14.44, "A1": -0.015, "A2": 0.0007, "A3": 0},
+        "Al": {"A0": 14.44, "A1": 0.424, "A2": -0.0256, "A3": 0},
+    },
+    "TiSiMe2N": {
+        "Cr": {"A0": 14.46, "A1": 0.097, "A2": -0.0046, "A3": 0},
+        "Zr": {"A0": 14.46, "A1": 0.091, "A2": -0.0015, "A3": 0},
+        "Al": {"A0": 14.46, "A1": 0.352, "A2": -0.0163, "A3": 0},
+    },
+}
+
+LAB2_COMPOSITION_RESULTS = {
+    "TiN": {"hmu": 31.5, "e": 307, "kicp": 12.3, "k0": 1.1},
+    "TiZrN": {"hmu": 36.6, "e": 379, "kicp": 14.4, "k0": 1.32},
+    "TiZrAlN": {"hmu": 42.0, "e": 428, "kicp": 16.1, "k0": 1.57},
+    "TiSiN": {"hmu": 33.2, "e": 350, "kicp": 14.4, "k0": 1.5},
+    "TiSiZrN": {"hmu": 39.7, "e": 403, "kicp": 15.5, "k0": 1.72},
+}
+
+
+def _build_lab2_mode1_graph_data(coating: str, tool_material: str, alloying_element: str, content_range: tuple, points_count: int = 41) -> dict:
+    min_c, max_c = content_range
+    if points_count < 2:
+        points_count = 2
+
+    step = (max_c - min_c) / (points_count - 1)
+    c_values = [min_c + i * step for i in range(points_count)]
+
+    hmu_coeffs = LAB2_HMU_COEFFS[coating][alloying_element]
+    e_coeffs = LAB2_E_COEFFS[coating][alloying_element]
+    kicp_coeffs = LAB2_KICP_COEFFS[coating][alloying_element]
+    k0_coeffs = LAB2_K0_COEFFS[coating][tool_material][alloying_element]
+
+    return {
+        'mode': 'mode1',
+        'c_values': [round(value, 4) for value in c_values],
+        'hmu_values': [round(_cubic_model(value, hmu_coeffs), 8) for value in c_values],
+        'e_values': [round(_cubic_model(value, e_coeffs), 8) for value in c_values],
+        'kicp_values': [round(_cubic_model(value, kicp_coeffs), 8) for value in c_values],
+        'k0_values': [round(_cubic_model(value, k0_coeffs), 8) for value in c_values],
+    }
+
+
+def _build_lab2_mode2_chart_data() -> dict:
+    coatings = list(LAB2_COMPOSITION_RESULTS.keys())
+    return {
+        'mode': 'mode2',
+        'coatings': coatings,
+        'hmu_values': [LAB2_COMPOSITION_RESULTS[item]['hmu'] for item in coatings],
+        'e_values': [LAB2_COMPOSITION_RESULTS[item]['e'] for item in coatings],
+        'kicp_values': [LAB2_COMPOSITION_RESULTS[item]['kicp'] for item in coatings],
+        'k0_values': [LAB2_COMPOSITION_RESULTS[item]['k0'] for item in coatings],
     }
 
 
@@ -232,9 +378,91 @@ LABS_DATA = [
     {
         'id': 2,
         'title': 'Исследование механических свойств покрытий',
-        'algorithm': ['Данные из ТЗ для этой лабораторной пока не переданы.'],
-        'form_fields': [],
-        'result_fields': [],
+        'algorithm': [
+            'выбирается режим исследования: влияние содержания легирующего элемента или влияние состава покрытия',
+            'для режима влияния содержания выбираются: износостойкое покрытие (TiAlMe2N, TiZrMe2N, TiSiMe2N), инструментальный материал (МК8, Р6М5К5), легирующий элемент и его содержание C, % в допустимом диапазоне',
+            'для режима влияния состава выбирается покрытие: TiN, TiZrN, TiZrAlN, TiSiN, TiSiZrN',
+            'определяются механические характеристики: микротвердость Hµ, модуль упругости E, трещиностойкость KICП, коэффициент отслоения K0',
+            'строятся графики Hµ(C), E(C), KICП(C), K0(C) или диаграммы по всем покрытиям для выбранного режима',
+        ],
+        'form_fields': [
+            {
+                'name': 'research_mode',
+                'label': 'режим исследования',
+                'type': 'select',
+                'options': [
+                    'Влияние содержания легирующего элемента',
+                    'Влияние состава покрытия',
+                ],
+            },
+            {
+                'name': 'coating',
+                'label': 'износостойкое покрытие',
+                'type': 'select',
+                'options': ['TiAlMe2N', 'TiZrMe2N', 'TiSiMe2N'],
+            },
+            {
+                'name': 'tool_material',
+                'label': 'инструментальный материал',
+                'type': 'select',
+                'options': ['МК8', 'Р6М5К5'],
+            },
+            {
+                'name': 'alloying_element',
+                'label': 'легирующий элемент',
+                'type': 'select',
+                'options': ['Fe', 'Cr', 'Zr', 'Al'],
+            },
+            {
+                'name': 'alloying_content',
+                'label': 'содержание легирующего элемента, %',
+                'type': 'text',
+                'placeholder': 'Введите значение, %',
+            },
+            {
+                'name': 'composition_coating',
+                'label': 'покрытие',
+                'type': 'select',
+                'options': ['TiN', 'TiZrN', 'TiZrAlN', 'TiSiN', 'TiSiZrN'],
+            },
+        ],
+        'research_modes': {
+            'mode1': 'Влияние содержания легирующего элемента',
+            'mode2': 'Влияние состава покрытия',
+        },
+        'alloying_by_coating': {
+            'TiAlMe2N': ['Fe', 'Cr', 'Zr'],
+            'TiZrMe2N': ['Fe', 'Cr', 'Al'],
+            'TiSiMe2N': ['Cr', 'Zr', 'Al'],
+        },
+        'content_ranges': {
+            'TiAlMe2N': {
+                'Fe': (0.43, 1.22),
+                'Cr': (1.35, 11.12),
+                'Zr': (4.61, 23.39),
+            },
+            'TiZrMe2N': {
+                'Fe': (0.49, 0.94),
+                'Cr': (1.44, 11.28),
+                'Al': (6.36, 9.25),
+            },
+            'TiSiMe2N': {
+                'Cr': (6.12, 11.37),
+                'Zr': (7.81, 24.74),
+                'Al': (6.45, 9.16),
+            },
+        },
+        'notes': [
+            'TiAlMe2N: Fe (0,43-1,22 %), Cr (1,35-11,12 %), Zr (4,61-23,39 %)',
+            'TiZrMe2N: Fe (0,49-0,94 %), Cr (1,44-11,28 %), Al (6,36-9,25 %)',
+            'TiSiMe2N: Cr (6,12-11,37 %), Zr (7,81-24,74 %), Al (6,45-9,16 %)',
+        ],
+        'result_fields': [
+            'микротвердость Hµ, ГПа',
+            'модуль упругости E, ГПа',
+            'трещиностойкость KICП, МПа·м^1/2',
+            'коэффициент отслоения K0',
+        ],
     },
     {
         'id': 3,
@@ -291,12 +519,7 @@ def lab_page(request, lab_id: int):
     if lab is None:
         raise Http404()
 
-    form_values = {
-        'coating': '',
-        'tool_material': '',
-        'alloying_element': '',
-        'alloying_content': '',
-    }
+    form_values = {field.get('name'): '' for field in lab.get('form_fields', [])}
     error_message = None
     calculated_results = {}
     graph_data = None
@@ -309,6 +532,25 @@ def lab_page(request, lab_id: int):
             form_values['coating'] = coating_options[0]
         if tool_options:
             form_values['tool_material'] = tool_options[0]
+
+        allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
+        if allowed_elements:
+            form_values['alloying_element'] = allowed_elements[0]
+
+    if request.method == 'GET' and lab_id == 2:
+        mode_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'research_mode'), [])
+        coating_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'coating'), [])
+        tool_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'tool_material'), [])
+        composition_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'composition_coating'), [])
+
+        if mode_options:
+            form_values['research_mode'] = mode_options[0]
+        if coating_options:
+            form_values['coating'] = coating_options[0]
+        if tool_options:
+            form_values['tool_material'] = tool_options[0]
+        if composition_options:
+            form_values['composition_coating'] = composition_options[0]
 
         allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
         if allowed_elements:
@@ -375,6 +617,91 @@ def lab_page(request, lab_id: int):
                 )
             except KeyError:
                 error_message = 'Для выбранной комбинации отсутствуют коэффициенты расчета.'
+
+    if request.method == 'POST' and lab_id == 2:
+        for field in lab.get('form_fields', []):
+            name = field.get('name')
+            form_values[name] = request.POST.get(name, '').strip()
+
+        mode1_name = lab.get('research_modes', {}).get('mode1')
+        mode2_name = lab.get('research_modes', {}).get('mode2')
+        selected_mode = form_values.get('research_mode', '')
+
+        if selected_mode not in (mode1_name, mode2_name):
+            error_message = 'Выберите корректный режим исследования.'
+
+        if error_message is None and selected_mode == mode1_name:
+            coating = form_values.get('coating', '')
+            tool_material = form_values.get('tool_material', '')
+            alloying_element = form_values.get('alloying_element', '')
+            content_raw = form_values.get('alloying_content', '')
+
+            if not coating:
+                error_message = 'Выберите износостойкое покрытие.'
+            elif not tool_material:
+                error_message = 'Выберите инструментальный материал.'
+            elif not alloying_element:
+                error_message = 'Выберите легирующий элемент.'
+            else:
+                allowed_elements = lab.get('alloying_by_coating', {}).get(coating, [])
+                if alloying_element not in allowed_elements:
+                    error_message = 'Выбранный легирующий элемент недоступен для указанного покрытия.'
+
+            content_value = None
+            if error_message is None:
+                try:
+                    content_value = float(content_raw.replace(',', '.'))
+                except ValueError:
+                    error_message = 'Содержание легирующего элемента должно быть числом.'
+
+            if error_message is None:
+                content_range = lab.get('content_ranges', {}).get(coating, {}).get(alloying_element)
+                if content_range is None:
+                    error_message = 'Для выбранной пары покрытие + легирующий элемент диапазон не задан.'
+                else:
+                    min_value, max_value = content_range
+                    if not (min_value <= content_value <= max_value):
+                        error_message = (
+                            f'Содержание легирующего элемента должно быть в диапазоне '
+                            f'{min_value:.2f}-{max_value:.2f} %.'
+                        )
+
+            if error_message is None:
+                try:
+                    hmu_value = _cubic_model(content_value, LAB2_HMU_COEFFS[coating][alloying_element])
+                    e_value = _cubic_model(content_value, LAB2_E_COEFFS[coating][alloying_element])
+                    kicp_value = _cubic_model(content_value, LAB2_KICP_COEFFS[coating][alloying_element])
+                    k0_value = _cubic_model(content_value, LAB2_K0_COEFFS[coating][tool_material][alloying_element])
+
+                    calculated_results = {
+                        'микротвердость Hµ, ГПа': f'{hmu_value:.3f}',
+                        'модуль упругости E, ГПа': f'{e_value:.3f}',
+                        'трещиностойкость KICП, МПа·м^1/2': f'{kicp_value:.3f}',
+                        'коэффициент отслоения K0': f'{k0_value:.3f}',
+                    }
+
+                    graph_data = _build_lab2_mode1_graph_data(
+                        coating=coating,
+                        tool_material=tool_material,
+                        alloying_element=alloying_element,
+                        content_range=lab['content_ranges'][coating][alloying_element],
+                    )
+                except KeyError:
+                    error_message = 'Для выбранной комбинации отсутствуют коэффициенты расчета.'
+
+        if error_message is None and selected_mode == mode2_name:
+            composition_coating = form_values.get('composition_coating', '')
+            if composition_coating not in LAB2_COMPOSITION_RESULTS:
+                error_message = 'Выберите покрытие для исследования влияния состава.'
+            else:
+                values = LAB2_COMPOSITION_RESULTS[composition_coating]
+                calculated_results = {
+                    'микротвердость Hµ, ГПа': f"{values['hmu']:.3f}",
+                    'модуль упругости E, ГПа': f"{values['e']:.3f}",
+                    'трещиностойкость KICП, МПа·м^1/2': f"{values['kicp']:.3f}",
+                    'коэффициент отслоения K0': f"{values['k0']:.3f}",
+                }
+                graph_data = _build_lab2_mode2_chart_data()
 
     result_items = _build_result_items(lab, calculated_results)
     form_fields = _build_form_fields_with_values(lab, form_values)
