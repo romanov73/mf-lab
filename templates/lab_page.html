@@ -7,9 +7,7 @@
 </div>
 
 {% if error_message %}
-<div class="alert alert-danger" role="alert">
-  {{ error_message }}
-</div>
+<div class="alert alert-danger" role="alert">{{ error_message }}</div>
 {% endif %}
 
 <div class="bg-light px-2 py-1 mb-3">
@@ -35,6 +33,7 @@
 
   <div class="border border-primary rounded bg-white p-3 mb-3">
     <p class="mb-3 h6">Форма ввода данных</p>
+
     <form method="post">
       {% csrf_token %}
 
@@ -46,7 +45,9 @@
           {% if field.type == 'select' %}
           <select class="form-control border-black" id="id_{{ field.name }}" name="{{ field.name }}">
             {% for option in field.options %}
-            <option value="{{ option }}" {% if field.current_value == option %}selected{% endif %}>{{ option }}</option>
+            <option value="{{ option }}" {% if field.current_value == option %}selected{% endif %}>
+              {{ option }}
+            </option>
             {% endfor %}
           </select>
           {% else %}
@@ -58,10 +59,13 @@
             placeholder="{{ field.placeholder }}"
             value="{{ field.current_value }}"
           />
-          {% if lab.id == 1 or lab.id == 2 or lab.id == 3 %}
-          {% if field.name == 'alloying_content' %}
-          <div id="alloying-content-range" class="form-text text-muted">Допустимый диапазон: -</div>
-          {% endif %}
+
+          {% if lab.id == 1 or lab.id == 2 or lab.id == 3 or lab.id == 4 %}
+            {% if field.name == 'alloying_content' %}
+            <div id="alloying-content-range" class="form-text text-muted">
+              Допустимый диапазон: -
+            </div>
+            {% endif %}
           {% endif %}
           {% endif %}
         </div>
@@ -116,6 +120,7 @@
         </div>
       </div>
     </div>
+
     {% elif graph_data and lab.id == 2 %}
       {% if graph_data.mode == 'mode1' %}
       <div class="row g-3">
@@ -172,6 +177,7 @@
         </div>
       </div>
       {% endif %}
+
     {% elif graph_data and lab.id == 3 %}
     <div class="row g-3">
       <div class="col-12 col-lg-6">
@@ -187,6 +193,99 @@
         </div>
       </div>
     </div>
+
+    {% elif graph_data and lab.id == 4 %}
+      {% if graph_data.mode == 'mode1' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Cγ(C)</p>
+            <canvas id="chart-lab4-cgamma" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">KL(C)</p>
+            <canvas id="chart-lab4-kl" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Px(C)</p>
+            <canvas id="chart-lab4-px" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Py(C)</p>
+            <canvas id="chart-lab4-py" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Pz(C)</p>
+            <canvas id="chart-lab4-pz" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+      {% elif graph_data.mode == 'mode2' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Cγ по покрытиям</p>
+            <canvas id="chart-lab4-comp-cgamma" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">KL по покрытиям</p>
+            <canvas id="chart-lab4-comp-kl" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Pz по покрытиям</p>
+            <canvas id="chart-lab4-comp-pz" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Nγ по покрытиям</p>
+            <canvas id="chart-lab4-comp-ngamma" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Fγ по покрытиям</p>
+            <canvas id="chart-lab4-comp-fgamma" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">qN по покрытиям</p>
+            <canvas id="chart-lab4-comp-qn" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">qF по покрытиям</p>
+            <canvas id="chart-lab4-comp-qf" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σN по покрытиям</p>
+            <canvas id="chart-lab4-comp-sigma-n" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">τF по покрытиям</p>
+            <canvas id="chart-lab4-comp-tau-f" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     {% else %}
     <div class="p-3 border rounded bg-light text-muted">
       Область для вывода графиков.
@@ -197,128 +296,141 @@
 {% endblock %}
 
 {% block scripts %}
-{% if lab.id == 1 or lab.id == 2 or lab.id == 3 %}
-{% if lab.alloying_by_coating and lab.content_ranges %}
-{{ lab.alloying_by_coating|json_script:"alloying-by-coating-data" }}
-{{ lab.content_ranges|json_script:"content-ranges-data" }}
+
+{% if lab.id == 1 or lab.id == 2 or lab.id == 3 or lab.id == 4 %}
+  {% if lab.alloying_by_coating and lab.content_ranges %}
+  {{ lab.alloying_by_coating|json_script:"alloying-by-coating-data" }}
+  {{ lab.content_ranges|json_script:"content-ranges-data" }}
+  <script>
+    (function () {
+      const coatingSelect = document.getElementById("id_coating");
+      const elementSelect = document.getElementById("id_alloying_element");
+      const rangeHint = document.getElementById("alloying-content-range");
+
+      if (!coatingSelect || !elementSelect || !rangeHint) {
+        return;
+      }
+
+      const alloyingByCoating = JSON.parse(
+        document.getElementById("alloying-by-coating-data").textContent
+      );
+      const contentRanges = JSON.parse(
+        document.getElementById("content-ranges-data").textContent
+      );
+
+      function refreshElements() {
+        const coating = coatingSelect.value;
+        const options = alloyingByCoating[coating] || [];
+        const previousValue = elementSelect.value;
+
+        elementSelect.innerHTML = "";
+
+        options.forEach(function (optionValue) {
+          const option = document.createElement("option");
+          option.value = optionValue;
+          option.textContent = optionValue;
+          elementSelect.appendChild(option);
+        });
+
+        if (options.indexOf(previousValue) !== -1) {
+          elementSelect.value = previousValue;
+        }
+      }
+
+      function refreshRange() {
+        const coating = coatingSelect.value;
+        const element = elementSelect.value;
+        const rangeValues = (contentRanges[coating] || {})[element] || null;
+
+        if (!rangeValues || rangeValues.length !== 2) {
+          rangeHint.textContent = "Допустимый диапазон: -";
+          return;
+        }
+
+        const minValue = String(rangeValues[0]).replace(".", ",");
+        const maxValue = String(rangeValues[1]).replace(".", ",");
+        rangeHint.textContent = "Допустимый диапазон: " + minValue + "-" + maxValue + " %";
+      }
+
+      coatingSelect.addEventListener("change", function () {
+        refreshElements();
+        refreshRange();
+      });
+
+      elementSelect.addEventListener("change", refreshRange);
+
+      refreshElements();
+      refreshRange();
+    })();
+  </script>
+  {% endif %}
+{% endif %}
+
+{% if lab.id == 4 and lab.research_modes %}
+{{ lab.research_modes|json_script:"lab4-research-modes" }}
 <script>
   (function () {
+    const modeSelect = document.getElementById("id_research_mode");
     const coatingSelect = document.getElementById("id_coating");
-    const elementSelect = document.getElementById("id_alloying_element");
-    const rangeHint = document.getElementById("alloying-content-range");
+    const form = modeSelect ? modeSelect.closest("form") : null;
 
-    if (!coatingSelect || !elementSelect || !rangeHint) {
+    if (!modeSelect || !form || !coatingSelect) {
       return;
     }
 
-    const alloyingByCoating = JSON.parse(
-      document.getElementById("alloying-by-coating-data").textContent
-    );
-    const contentRanges = JSON.parse(
-      document.getElementById("content-ranges-data").textContent
+    const modeNames = JSON.parse(
+      document.getElementById("lab4-research-modes").textContent
     );
 
-    function refreshElements() {
-      const coating = coatingSelect.value;
-      const options = alloyingByCoating[coating] || [];
-      const previousValue = elementSelect.value;
+    const fieldRows = {
+      coating: form.querySelector('[data-field-name="coating"]'),
+      tool_material: form.querySelector('[data-field-name="tool_material"]'),
+      processed_material: form.querySelector('[data-field-name="processed_material"]'),
+      alloying_element: form.querySelector('[data-field-name="alloying_element"]'),
+      alloying_content: form.querySelector('[data-field-name="alloying_content"]')
+    };
 
-      elementSelect.innerHTML = "";
+    const mode1Coatings = ["TiAlMe2N", "TiZrMe2N", "TiSiMe2N"];
+    const mode2Coatings = ["без покрытия", "TiN", "TiZrN", "TiZrAlN", "TiSiN", "TiSiZrN"];
+
+    function refreshCoatingOptions(isMode1) {
+      const previousValue = coatingSelect.value;
+      const options = isMode1 ? mode1Coatings : mode2Coatings;
+
+      coatingSelect.innerHTML = "";
 
       options.forEach(function (optionValue) {
         const option = document.createElement("option");
         option.value = optionValue;
         option.textContent = optionValue;
-        elementSelect.appendChild(option);
+        coatingSelect.appendChild(option);
       });
 
-      if (options.indexOf(previousValue) !== -1) {
-        elementSelect.value = previousValue;
-      }
+      coatingSelect.value = options.indexOf(previousValue) !== -1 ? previousValue : options[0];
+      coatingSelect.dispatchEvent(new Event("change"));
     }
 
-    function refreshRange() {
-      const coating = coatingSelect.value;
-      const element = elementSelect.value;
-      const rangeValues = (contentRanges[coating] || {})[element] || null;
-
-      if (!rangeValues || rangeValues.length !== 2) {
-        rangeHint.textContent = "Допустимый диапазон: -";
+    function toggleField(fieldNode, isVisible) {
+      if (!fieldNode) {
         return;
       }
-
-      const minValue = String(rangeValues[0]).replace(".", ",");
-      const maxValue = String(rangeValues[1]).replace(".", ",");
-      rangeHint.textContent = "Допустимый диапазон: " + minValue + "-" + maxValue + " %";
+      fieldNode.style.display = isVisible ? "block" : "none";
     }
 
-    coatingSelect.addEventListener("change", function () {
-      refreshElements();
-      refreshRange();
-    });
+    function refreshModeView() {
+      const isMode1 = modeSelect.value === modeNames.mode1;
 
-    elementSelect.addEventListener("change", refreshRange);
+      refreshCoatingOptions(isMode1);
 
-    refreshElements();
-    refreshRange();
-  })();
-</script>
-{% endif %}
-{% endif %}
-
-{% if lab.id == 3 and graph_data %}
-{{ graph_data|json_script:"lab3-graph-data" }}
-<script>
-  (function () {
-    const graphDataNode = document.getElementById("lab3-graph-data");
-    if (!graphDataNode) return;
-    const graphData = JSON.parse(graphDataNode.textContent);
-
-    function drawLineChart(canvasId, xValues, yValues, color) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas || !xValues || !yValues || xValues.length !== yValues.length || xValues.length === 0) return;
-      const ctx = canvas.getContext("2d");
-      const width = canvas.width;
-      const height = canvas.height;
-      const paddingLeft = 38;
-      const paddingRight = 10;
-      const paddingTop = 10;
-      const paddingBottom = 24;
-      const plotWidth = width - paddingLeft - paddingRight;
-      const plotHeight = height - paddingTop - paddingBottom;
-      const minX = Math.min.apply(null, xValues);
-      const maxX = Math.max.apply(null, xValues);
-      const minY = Math.min.apply(null, yValues);
-      const maxY = Math.max.apply(null, yValues);
-      const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
-      const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
-      ctx.clearRect(0, 0, width, height);
-      ctx.strokeStyle = "#9aa1a8";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(paddingLeft, paddingTop);
-      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
-      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
-      ctx.stroke();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i < xValues.length; i++) {
-        const x = paddingLeft + ((xValues[i] - minX) / xSpan) * plotWidth;
-        const y = paddingTop + plotHeight - ((yValues[i] - minY) / ySpan) * plotHeight;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.fillStyle = "#6c757d";
-      ctx.font = "11px sans-serif";
-      ctx.fillText(String(minX).replace(".", ","), paddingLeft - 8, height - 6);
-      ctx.fillText(String(maxX).replace(".", ","), paddingLeft + plotWidth - 22, height - 6);
-      ctx.fillText(String(minY).replace(".", ","), 2, paddingTop + plotHeight + 4);
-      ctx.fillText(String(maxY).replace(".", ","), 2, paddingTop + 10);
+      toggleField(fieldRows.coating, true);
+      toggleField(fieldRows.tool_material, isMode1);
+      toggleField(fieldRows.processed_material, isMode1);
+      toggleField(fieldRows.alloying_element, isMode1);
+      toggleField(fieldRows.alloying_content, isMode1);
     }
 
-    drawLineChart("chart-lab3-tc", graphData.c_values, graphData.tc_values, "#0d6efd");
-    drawLineChart("chart-lab3-j", graphData.c_values, graphData.j_values, "#dc3545");
+    modeSelect.addEventListener("change", refreshModeView);
+    refreshModeView();
   })();
 </script>
 {% endif %}
@@ -354,9 +466,8 @@
     }
 
     function refreshModeView() {
-      const modeValue = modeSelect.value;
-      const isMode1 = modeValue === modeNames.mode1;
-      const isMode2 = modeValue === modeNames.mode2;
+      const isMode1 = modeSelect.value === modeNames.mode1;
+      const isMode2 = modeSelect.value === modeNames.mode2;
 
       toggleField(fieldRows.coating, isMode1);
       toggleField(fieldRows.tool_material, isMode1);
@@ -371,11 +482,11 @@
 </script>
 {% endif %}
 
-{% if lab.id == 1 and graph_data %}
-{{ graph_data|json_script:"lab1-graph-data" }}
+{% if graph_data %}
+{{ graph_data|json_script:"graph-data" }}
 <script>
   (function () {
-    const graphDataNode = document.getElementById("lab1-graph-data");
+    const graphDataNode = document.getElementById("graph-data");
 
     if (!graphDataNode) {
       return;
@@ -397,95 +508,12 @@
       const paddingRight = 10;
       const paddingTop = 10;
       const paddingBottom = 24;
-
       const plotWidth = width - paddingLeft - paddingRight;
       const plotHeight = height - paddingTop - paddingBottom;
-
       const minX = Math.min.apply(null, xValues);
       const maxX = Math.max.apply(null, xValues);
       const minY = Math.min.apply(null, yValues);
       const maxY = Math.max.apply(null, yValues);
-
-      const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
-      const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
-
-      ctx.clearRect(0, 0, width, height);
-
-      ctx.strokeStyle = "#9aa1a8";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(paddingLeft, paddingTop);
-      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
-      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
-      ctx.stroke();
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-
-      for (let i = 0; i < xValues.length; i++) {
-        const x = paddingLeft + ((xValues[i] - minX) / xSpan) * plotWidth;
-        const y = paddingTop + plotHeight - ((yValues[i] - minY) / ySpan) * plotHeight;
-
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-
-      ctx.stroke();
-
-      ctx.fillStyle = "#6c757d";
-      ctx.font = "11px sans-serif";
-      ctx.fillText(String(minX).replace(".", ","), paddingLeft - 8, height - 6);
-      ctx.fillText(String(maxX).replace(".", ","), paddingLeft + plotWidth - 22, height - 6);
-      ctx.fillText(String(minY).replace(".", ","), 2, paddingTop + plotHeight + 4);
-      ctx.fillText(String(maxY).replace(".", ","), 2, paddingTop + 10);
-    }
-
-    drawLineChart("chart-a", graphData.c_values, graphData.a_values, "#0d6efd");
-    drawLineChart("chart-beta", graphData.c_values, graphData.beta_values, "#198754");
-    drawLineChart("chart-sigma", graphData.c_values, graphData.sigma_values, "#dc3545");
-  })();
-</script>
-{% endif %}
-
-{% if lab.id == 2 and graph_data %}
-{{ graph_data|json_script:"lab2-graph-data" }}
-<script>
-  (function () {
-    const graphDataNode = document.getElementById("lab2-graph-data");
-
-    if (!graphDataNode) {
-      return;
-    }
-
-    const graphData = JSON.parse(graphDataNode.textContent);
-
-    function drawLineChart(canvasId, xValues, yValues, color) {
-      const canvas = document.getElementById(canvasId);
-
-      if (!canvas || !xValues || !yValues || xValues.length !== yValues.length || xValues.length === 0) {
-        return;
-      }
-
-      const ctx = canvas.getContext("2d");
-      const width = canvas.width;
-      const height = canvas.height;
-      const paddingLeft = 38;
-      const paddingRight = 10;
-      const paddingTop = 10;
-      const paddingBottom = 24;
-
-      const plotWidth = width - paddingLeft - paddingRight;
-      const plotHeight = height - paddingTop - paddingBottom;
-
-      const minX = Math.min.apply(null, xValues);
-      const maxX = Math.max.apply(null, xValues);
-      const minY = Math.min.apply(null, yValues);
-      const maxY = Math.max.apply(null, yValues);
-
       const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
       const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
 
@@ -538,7 +566,6 @@
       const paddingRight = 10;
       const paddingTop = 10;
       const paddingBottom = 36;
-
       const plotWidth = width - paddingLeft - paddingRight;
       const plotHeight = height - paddingTop - paddingBottom;
       const maxY = Math.max.apply(null, values);
@@ -576,20 +603,52 @@
       ctx.fillText(String(Math.round(maxY * 100) / 100).replace(".", ","), 2, paddingTop + 10);
     }
 
-    if (graphData.mode === "mode1") {
+    if (document.getElementById("chart-a")) {
+      drawLineChart("chart-a", graphData.c_values, graphData.a_values, "#0d6efd");
+      drawLineChart("chart-beta", graphData.c_values, graphData.beta_values, "#198754");
+      drawLineChart("chart-sigma", graphData.c_values, graphData.sigma_values, "#dc3545");
+    }
+
+    if (document.getElementById("chart-hmu")) {
       drawLineChart("chart-hmu", graphData.c_values, graphData.hmu_values, "#0d6efd");
       drawLineChart("chart-e", graphData.c_values, graphData.e_values, "#198754");
       drawLineChart("chart-kicp", graphData.c_values, graphData.kicp_values, "#dc3545");
       drawLineChart("chart-k0", graphData.c_values, graphData.k0_values, "#fd7e14");
     }
 
-    if (graphData.mode === "mode2") {
+    if (document.getElementById("chart-comp-hmu")) {
       drawBarChart("chart-comp-hmu", graphData.coatings, graphData.hmu_values, "#0d6efd");
       drawBarChart("chart-comp-e", graphData.coatings, graphData.e_values, "#198754");
       drawBarChart("chart-comp-kicp", graphData.coatings, graphData.kicp_values, "#dc3545");
       drawBarChart("chart-comp-k0", graphData.coatings, graphData.k0_values, "#fd7e14");
     }
+
+    if (document.getElementById("chart-lab3-tc")) {
+      drawLineChart("chart-lab3-tc", graphData.c_values, graphData.tc_values, "#0d6efd");
+      drawLineChart("chart-lab3-j", graphData.c_values, graphData.j_values, "#dc3545");
+    }
+
+    if (document.getElementById("chart-lab4-cgamma")) {
+      drawLineChart("chart-lab4-cgamma", graphData.c_values, graphData.cgamma_values, "#0d6efd");
+      drawLineChart("chart-lab4-kl", graphData.c_values, graphData.kl_values, "#198754");
+      drawLineChart("chart-lab4-px", graphData.c_values, graphData.px_values, "#dc3545");
+      drawLineChart("chart-lab4-py", graphData.c_values, graphData.py_values, "#fd7e14");
+      drawLineChart("chart-lab4-pz", graphData.c_values, graphData.pz_values, "#6f42c1");
+    }
+
+    if (document.getElementById("chart-lab4-comp-cgamma")) {
+      drawBarChart("chart-lab4-comp-cgamma", graphData.coatings, graphData.cgamma_values, "#0d6efd");
+      drawBarChart("chart-lab4-comp-kl", graphData.coatings, graphData.kl_values, "#198754");
+      drawBarChart("chart-lab4-comp-pz", graphData.coatings, graphData.pz_values, "#dc3545");
+      drawBarChart("chart-lab4-comp-ngamma", graphData.coatings, graphData.ngamma_values, "#fd7e14");
+      drawBarChart("chart-lab4-comp-fgamma", graphData.coatings, graphData.fgamma_values, "#6f42c1");
+      drawBarChart("chart-lab4-comp-qn", graphData.coatings, graphData.qn_values, "#20c997");
+      drawBarChart("chart-lab4-comp-qf", graphData.coatings, graphData.qf_values, "#0dcaf0");
+      drawBarChart("chart-lab4-comp-sigma-n", graphData.coatings, graphData.sigma_n_values, "#198754");
+      drawBarChart("chart-lab4-comp-tau-f", graphData.coatings, graphData.tau_f_values, "#dc3545");
+    }
   })();
 </script>
 {% endif %}
+
 {% endblock %}

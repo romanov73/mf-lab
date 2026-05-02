@@ -124,12 +124,18 @@ def _cubic_model(c_value: float, coeffs: dict) -> float:
 
 def _build_result_items(lab: dict, calculated_results: dict | None = None) -> list:
     calculated_results = calculated_results or {}
+    result_fields = lab.get('result_fields', [])
+
+    if isinstance(result_fields, dict):
+        result_fields = result_fields.get(calculated_results.get('_mode'), [])
+
     return [
         {
             'label': label,
             'value': calculated_results.get(label, '-'),
         }
-        for label in lab.get('result_fields', [])
+        for label in result_fields
+        if not str(label).startswith('_')
     ]
 
 
@@ -139,7 +145,7 @@ def _build_form_fields_with_values(lab: dict, form_values: dict) -> list:
     for field in lab.get('form_fields', []):
         prepared = field.copy()
 
-        if lab.get('id') in (1, 2) and field.get('name') == 'alloying_element':
+        if lab.get('id') in (1, 2, 4) and field.get('name') == 'alloying_element':
             allowed_elements = lab.get('alloying_by_coating', {}).get(selected_coating, field.get('options', []))
             prepared['options'] = allowed_elements
 
@@ -448,6 +454,253 @@ def _build_lab3_graph_data(coating: str, tool_material: str, processed_material:
     }
 
 
+LAB4_CGAMMA_COEFFS = {
+    'TiAlMe2N': {
+        'МК8': {
+            'Fe': {'A0': 0.501, 'A1': 0.1210, 'A2': -0.05135, 'A3': 0},
+            'Cr': {'A0': 0.501, 'A1': 0.0166, 'A2': -0.00087, 'A3': 0},
+            'Zr': {'A0': 0.501, 'A1': 0.0073, 'A2': -0.00027, 'A3': 2.382e-06},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 0.483, 'A1': 0.1802, 'A2': -0.13825, 'A3': 3.166e-02},
+            'Cr': {'A0': 0.483, 'A1': 0.0145, 'A2': -0.00068, 'A3': 4.35e-06},
+            'Zr': {'A0': 0.483, 'A1': 0.0074, 'A2': -0.00031, 'A3': 3.92e-06},
+        },
+    },
+    'TiZrMe2N': {
+        'МК8': {
+            'Fe': {'A0': 0.508, 'A1': 0.0834, 'A2': -0.02986, 'A3': 0},
+            'Cr': {'A0': 0.508, 'A1': 0.0136, 'A2': -0.00073, 'A3': 0},
+            'Al': {'A0': 0.508, 'A1': 0.0110, 'A2': -0.00057, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 0.497, 'A1': 0.1411, 'A2': -0.09028, 'A3': 1.586e-02},
+            'Cr': {'A0': 0.497, 'A1': 0.0212, 'A2': -0.00177, 'A3': 3.75e-05},
+            'Al': {'A0': 0.497, 'A1': 0.0118, 'A2': -0.00069, 'A3': 0},
+        },
+    },
+    'TiSiMe2N': {
+        'МК8': {
+            'Cr': {'A0': 0.492, 'A1': 0.0167, 'A2': -0.00086, 'A3': 0},
+            'Zr': {'A0': 0.492, 'A1': 0.0072, 'A2': -0.00019, 'A3': 0},
+            'Al': {'A0': 0.492, 'A1': 0.0124, 'A2': -0.00070, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Cr': {'A0': 0.476, 'A1': 0.0092, 'A2': -0.00046, 'A3': 0},
+            'Zr': {'A0': 0.476, 'A1': 0.0040, 'A2': -0.00011, 'A3': 0},
+            'Al': {'A0': 0.476, 'A1': 0.0069, 'A2': -0.00039, 'A3': 0},
+        },
+    },
+}
+
+LAB4_KL_COEFFS = {
+    'TiAlMe2N': {
+        'МК8': {
+            'Fe': {'A0': 1.91, 'A1': 0.264, 'A2': -0.1163, 'A3': 0},
+            'Cr': {'A0': 1.91, 'A1': 0.035, 'A2': -0.0018, 'A3': 0},
+            'Zr': {'A0': 1.91, 'A1': 0.018, 'A2': -0.0005, 'A3': -4.27e-06},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 1.79, 'A1': 0.271, 'A2': -0.1123, 'A3': -5.31e-03},
+            'Cr': {'A0': 1.79, 'A1': 0.043, 'A2': -0.0030, 'A3': 4.63e-05},
+            'Zr': {'A0': 1.79, 'A1': 0.015, 'A2': -0.0007, 'A3': 9.5e-06},
+        },
+    },
+    'TiZrMe2N': {
+        'МК8': {
+            'Fe': {'A0': 1.96, 'A1': 0.239, 'A2': -0.0883, 'A3': 0},
+            'Cr': {'A0': 1.96, 'A1': 0.035, 'A2': -0.0017, 'A3': 0},
+            'Al': {'A0': 1.96, 'A1': 0.019, 'A2': -0.0011, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 1.82, 'A1': 0.356, 'A2': -0.2526, 'A3': 5.58e-02},
+            'Cr': {'A0': 1.82, 'A1': 0.055, 'A2': -0.0053, 'A3': 1.59e-04},
+            'Al': {'A0': 1.82, 'A1': 0.024, 'A2': -0.0014, 'A3': 0},
+        },
+    },
+    'TiSiMe2N': {
+        'МК8': {
+            'Cr': {'A0': 1.90, 'A1': 0.026, 'A2': -0.0012, 'A3': 0},
+            'Zr': {'A0': 1.90, 'A1': 0.008, 'A2': -0.0002, 'A3': 0},
+            'Al': {'A0': 1.90, 'A1': 0.010, 'A2': -0.0005, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Cr': {'A0': 1.75, 'A1': 0.032, 'A2': -0.0017, 'A3': 0},
+            'Zr': {'A0': 1.75, 'A1': 0.009, 'A2': -0.00025, 'A3': 0},
+            'Al': {'A0': 1.75, 'A1': 0.015, 'A2': -0.0008, 'A3': 0},
+        },
+    },
+}
+
+LAB4_PX_COEFFS = {
+    'TiAlMe2N': {
+        'МК8': {
+            'Fe': {'A0': 83, 'A1': 15.8, 'A2': -6.64, 'A3': 0},
+            'Cr': {'A0': 83, 'A1': 2.47, 'A2': -0.133, 'A3': 0},
+            'Zr': {'A0': 83, 'A1': 0.96, 'A2': -0.048, 'A3': 7.5e-04},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 110, 'A1': 29.9, 'A2': -22.61, 'A3': 4.81},
+            'Cr': {'A0': 110, 'A1': 2.28, 'A2': -0.042, 'A3': -5.2e-03},
+            'Zr': {'A0': 110, 'A1': 0.79, 'A2': -0.032, 'A3': 3.7e-04},
+        },
+    },
+    'TiZrMe2N': {
+        'МК8': {
+            'Fe': {'A0': 86, 'A1': 10.7, 'A2': -4.1, 'A3': 0},
+            'Cr': {'A0': 86, 'A1': 1.72, 'A2': -0.09, 'A3': 0},
+            'Al': {'A0': 86, 'A1': 0.78, 'A2': -0.04, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 111, 'A1': 26.4, 'A2': -18.1, 'A3': 3.75},
+            'Cr': {'A0': 111, 'A1': 4.0, 'A2': -0.36, 'A3': 9.9e-03},
+            'Al': {'A0': 111, 'A1': 1.4, 'A2': -0.07, 'A3': 0},
+        },
+    },
+    'TiSiMe2N': {
+        'МК8': {
+            'Cr': {'A0': 81, 'A1': 2.5, 'A2': -0.12, 'A3': 0},
+            'Zr': {'A0': 81, 'A1': 0.9, 'A2': -0.02, 'A3': 0},
+            'Al': {'A0': 81, 'A1': 0.8, 'A2': -0.04, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Cr': {'A0': 108, 'A1': 1.66, 'A2': -0.08, 'A3': 0},
+            'Zr': {'A0': 108, 'A1': 0.50, 'A2': -0.014, 'A3': 0},
+            'Al': {'A0': 108, 'A1': 0.42, 'A2': -0.022, 'A3': 0},
+        },
+    },
+}
+
+LAB4_PY_COEFFS = {
+    'TiAlMe2N': {
+        'МК8': {
+            'Fe': {'A0': 130, 'A1': 23.04, 'A2': -10.34, 'A3': 0.594},
+            'Cr': {'A0': 130, 'A1': 3.71, 'A2': -0.201, 'A3': 0},
+            'Zr': {'A0': 130, 'A1': 1.115, 'A2': -0.047, 'A3': 6.2e-04},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 189, 'A1': 59.5, 'A2': -48.57, 'A3': 12.24},
+            'Cr': {'A0': 189, 'A1': 4.73, 'A2': -0.22, 'A3': -1.7e-03},
+            'Zr': {'A0': 189, 'A1': 1.59, 'A2': -0.06, 'A3': 7.4e-04},
+        },
+    },
+    'TiZrMe2N': {
+        'МК8': {
+            'Fe': {'A0': 133, 'A1': 19.6, 'A2': -7.2, 'A3': 0},
+            'Cr': {'A0': 133, 'A1': 2.8, 'A2': -0.141, 'A3': 0},
+            'Al': {'A0': 133, 'A1': 1.50, 'A2': -0.081, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 193, 'A1': 46.0, 'A2': -29.3, 'A3': 5.0},
+            'Cr': {'A0': 193, 'A1': 7.27, 'A2': -0.75, 'A3': 0.025},
+            'Al': {'A0': 193, 'A1': 2.51, 'A2': -0.14, 'A3': 0},
+        },
+    },
+    'TiSiMe2N': {
+        'МК8': {
+            'Cr': {'A0': 127, 'A1': 3.7, 'A2': -0.17, 'A3': 0},
+            'Zr': {'A0': 127, 'A1': 1.1, 'A2': -0.03, 'A3': 0},
+            'Al': {'A0': 127, 'A1': 0.9, 'A2': -0.05, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Cr': {'A0': 184, 'A1': 2.56, 'A2': -0.125, 'A3': 0},
+            'Zr': {'A0': 184, 'A1': 0.99, 'A2': -0.029, 'A3': 0},
+            'Al': {'A0': 184, 'A1': 0.90, 'A2': -0.051, 'A3': 0},
+        },
+    },
+}
+
+LAB4_PZ_COEFFS = {
+    'TiAlMe2N': {
+        'МК8': {
+            'Fe': {'A0': 209, 'A1': 32.6, 'A2': -13.4, 'A3': 0},
+            'Cr': {'A0': 209, 'A1': 5.46, 'A2': -0.297, 'A3': 0},
+            'Zr': {'A0': 209, 'A1': 1.89, 'A2': -0.096, 'A3': 1.5e-03},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 424, 'A1': 113.2, 'A2': -94.6, 'A3': 24.65},
+            'Cr': {'A0': 424, 'A1': 10.53, 'A2': -0.71, 'A3': 0.011},
+            'Zr': {'A0': 424, 'A1': 2.58, 'A2': -0.09, 'A3': 7.2e-04},
+        },
+    },
+    'TiZrMe2N': {
+        'МК8': {
+            'Fe': {'A0': 216, 'A1': 31.6, 'A2': -15.0, 'A3': 1.9},
+            'Cr': {'A0': 216, 'A1': 4.2, 'A2': -0.21, 'A3': 0},
+            'Al': {'A0': 216, 'A1': 2.2, 'A2': -0.12, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Fe': {'A0': 433, 'A1': 94.9, 'A2': -66.23, 'A3': 13.65},
+            'Cr': {'A0': 433, 'A1': 10.41, 'A2': -0.59, 'A3': 0},
+            'Al': {'A0': 433, 'A1': 3.75, 'A2': -0.21, 'A3': 0},
+        },
+    },
+    'TiSiMe2N': {
+        'МК8': {
+            'Cr': {'A0': 205, 'A1': 5.4, 'A2': -0.27, 'A3': 0},
+            'Zr': {'A0': 205, 'A1': 1.6, 'A2': -0.05, 'A3': 0},
+            'Al': {'A0': 205, 'A1': 1.6, 'A2': -0.09, 'A3': 0},
+        },
+        'Р6М5К5': {
+            'Cr': {'A0': 415, 'A1': 5.12, 'A2': -0.25, 'A3': 0},
+            'Zr': {'A0': 415, 'A1': 1.83, 'A2': -0.055, 'A3': 0},
+            'Al': {'A0': 415, 'A1': 1.16, 'A2': -0.067, 'A3': 0},
+        },
+    },
+}
+
+LAB4_COMPOSITION_RESULTS = {
+    'без покрытия': {'cgamma': 0.71, 'kl': 2.21, 'pz': 228, 'ngamma': 272, 'fgamma': 135, 'qn': 578, 'qf': 430, 'sigma_n': 1720, 'tau_f': 510},
+    'TiN': {'cgamma': 0.45, 'kl': 1.77, 'pz': 197, 'ngamma': 198, 'fgamma': 120, 'qn': 624, 'qf': 379, 'sigma_n': 1908, 'tau_f': 559},
+    'TiZrN': {'cgamma': 0.51, 'kl': 1.96, 'pz': 216, 'ngamma': 218, 'fgamma': 130, 'qn': 608, 'qf': 362, 'sigma_n': 1839, 'tau_f': 544},
+    'TiZrAlN': {'cgamma': 0.56, 'kl': 2.05, 'pz': 226, 'ngamma': 228, 'fgamma': 136, 'qn': 577, 'qf': 345, 'sigma_n': 1773, 'tau_f': 530},
+    'TiSiN': {'cgamma': 0.50, 'kl': 1.90, 'pz': 205, 'ngamma': 207, 'fgamma': 123, 'qn': 594, 'qf': 354, 'sigma_n': 1808, 'tau_f': 533},
+    'TiSiZrN': {'cgamma': 0.55, 'kl': 1.97, 'pz': 217, 'ngamma': 220, 'fgamma': 133, 'qn': 565, 'qf': 341, 'sigma_n': 1644, 'tau_f': 510},
+}
+
+
+def _build_lab4_mode1_graph_data(coating: str, tool_material: str, alloying_element: str, content_range: tuple, points_count: int = 41) -> dict:
+    min_c, max_c = content_range
+    if points_count < 2:
+        points_count = 2
+
+    step = (max_c - min_c) / (points_count - 1)
+    c_values = [min_c + i * step for i in range(points_count)]
+
+    cgamma_coeffs = LAB4_CGAMMA_COEFFS[coating][tool_material][alloying_element]
+    kl_coeffs = LAB4_KL_COEFFS[coating][tool_material][alloying_element]
+    px_coeffs = LAB4_PX_COEFFS[coating][tool_material][alloying_element]
+    py_coeffs = LAB4_PY_COEFFS[coating][tool_material][alloying_element]
+    pz_coeffs = LAB4_PZ_COEFFS[coating][tool_material][alloying_element]
+
+    return {
+        'mode': 'mode1',
+        'c_values': [round(value, 4) for value in c_values],
+        'cgamma_values': [round(_cubic_model(value, cgamma_coeffs), 8) for value in c_values],
+        'kl_values': [round(_cubic_model(value, kl_coeffs), 8) for value in c_values],
+        'px_values': [round(_cubic_model(value, px_coeffs), 8) for value in c_values],
+        'py_values': [round(_cubic_model(value, py_coeffs), 8) for value in c_values],
+        'pz_values': [round(_cubic_model(value, pz_coeffs), 8) for value in c_values],
+    }
+
+
+def _build_lab4_mode2_chart_data() -> dict:
+    coatings = list(LAB4_COMPOSITION_RESULTS.keys())
+    return {
+        'mode': 'mode2',
+        'coatings': coatings,
+        'cgamma_values': [LAB4_COMPOSITION_RESULTS[item]['cgamma'] for item in coatings],
+        'kl_values': [LAB4_COMPOSITION_RESULTS[item]['kl'] for item in coatings],
+        'pz_values': [LAB4_COMPOSITION_RESULTS[item]['pz'] for item in coatings],
+        'ngamma_values': [LAB4_COMPOSITION_RESULTS[item]['ngamma'] for item in coatings],
+        'fgamma_values': [LAB4_COMPOSITION_RESULTS[item]['fgamma'] for item in coatings],
+        'qn_values': [LAB4_COMPOSITION_RESULTS[item]['qn'] for item in coatings],
+        'qf_values': [LAB4_COMPOSITION_RESULTS[item]['qf'] for item in coatings],
+        'sigma_n_values': [LAB4_COMPOSITION_RESULTS[item]['sigma_n'] for item in coatings],
+        'tau_f_values': [LAB4_COMPOSITION_RESULTS[item]['tau_f'] for item in coatings],
+    }
+
+
 LABS_DATA = [
     {
         'id': 1,
@@ -673,9 +926,84 @@ LABS_DATA = [
     {
         'id': 4,
         'title': 'Исследование контактных характеристик процесса резания',
-        'algorithm': ['Данные из ТЗ для этой лабораторной пока не переданы.'],
-        'form_fields': [],
-        'result_fields': [],
+        'algorithm': [
+            'выбирается режим исследования: влияние содержания легирующего элемента в покрытии или влияние состава покрытия',
+            'для режима влияния содержания выбираются покрытие, инструментальный материал, обрабатываемый материал, легирующий элемент и его содержание C, % в допустимом диапазоне',
+            'для режима влияния состава выбирается покрытие из таблицы 6',
+            'определяются контактные характеристики процесса резания',
+            'строятся 5 графиков зависимости от содержания легирующего элемента или диаграммы сравнения по покрытиям',
+        ],
+        'form_fields': [
+            {
+                'name': 'research_mode',
+                'label': 'режим исследования',
+                'type': 'select',
+                'options': [
+                    'Влияние содержания легирующего элемента',
+                    'Влияние состава покрытия',
+                ],
+            },
+            {
+                'name': 'coating',
+                'label': 'износостойкое покрытие',
+                'type': 'select',
+                'options': ['TiAlMe2N', 'TiZrMe2N', 'TiSiMe2N', 'без покрытия', 'TiN', 'TiZrN', 'TiZrAlN', 'TiSiN', 'TiSiZrN'],
+            },
+            {
+                'name': 'tool_material',
+                'label': 'инструментальный материал',
+                'type': 'select',
+                'options': ['МК8', 'Р6М5К5'],
+            },
+            {
+                'name': 'processed_material',
+                'label': 'обрабатываемый материал',
+                'type': 'select',
+                'options': ['30ХГСА', '12Х18Н10Т'],
+            },
+            {
+                'name': 'alloying_element',
+                'label': 'легирующий элемент',
+                'type': 'select',
+                'options': ['Fe', 'Cr', 'Zr', 'Al'],
+            },
+            {
+                'name': 'alloying_content',
+                'label': 'содержание легирующего элемента, %',
+                'type': 'text',
+                'placeholder': 'Введите значение, %',
+            },
+        ],
+        'research_modes': {
+            'mode1': 'Влияние содержания легирующего элемента',
+            'mode2': 'Влияние состава покрытия',
+        },
+        'alloying_by_coating': {
+            'TiAlMe2N': ['Fe', 'Cr', 'Zr'],
+            'TiZrMe2N': ['Fe', 'Cr', 'Al'],
+            'TiSiMe2N': ['Cr', 'Zr', 'Al'],
+        },
+        'content_ranges': {
+            'TiAlMe2N': {
+                'Fe': (0.43, 1.22),
+                'Cr': (1.35, 11.12),
+                'Zr': (4.61, 23.39),
+            },
+            'TiZrMe2N': {
+                'Fe': (0.49, 0.94),
+                'Cr': (1.44, 11.28),
+                'Al': (6.36, 9.25),
+            },
+            'TiSiMe2N': {
+                'Cr': (6.12, 11.37),
+                'Zr': (7.81, 24.74),
+                'Al': (6.45, 9.16),
+            },
+        },
+        'result_fields': {
+            'mode1': ['Cγ, мм', 'KL', 'Px, Н', 'Py, Н', 'Pz, Н'],
+            'mode2': ['Cγ', 'KL', 'Pz, Н', 'Nγ, Н', 'Fγ, Н', 'qN, МПа', 'qF, МПа', 'σN, МПа', 'τF, МПа'],
+        },
     },
     {
         'id': 5,
@@ -760,6 +1088,25 @@ def lab_page(request, lab_id: int):
         tool_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'tool_material'), [])
         proc_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'processed_material'), [])
 
+        if coating_options:
+            form_values['coating'] = coating_options[0]
+        if tool_options:
+            form_values['tool_material'] = tool_options[0]
+        if proc_options:
+            form_values['processed_material'] = proc_options[0]
+
+        allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
+        if allowed_elements:
+            form_values['alloying_element'] = allowed_elements[0]
+
+    if request.method == 'GET' and lab_id == 4:
+        mode_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'research_mode'), [])
+        coating_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'coating'), [])
+        tool_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'tool_material'), [])
+        proc_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'processed_material'), [])
+
+        if mode_options:
+            form_values['research_mode'] = mode_options[0]
         if coating_options:
             form_values['coating'] = coating_options[0]
         if tool_options:
@@ -970,6 +1317,109 @@ def lab_page(request, lab_id: int):
                 )
             except KeyError:
                 error_message = 'Для выбранной комбинации отсутствуют коэффициенты расчета.'
+
+    if request.method == 'POST' and lab_id == 4:
+        for field in lab.get('form_fields', []):
+            name = field.get('name')
+            form_values[name] = request.POST.get(name, '').strip()
+
+        mode1_name = lab.get('research_modes', {}).get('mode1')
+        mode2_name = lab.get('research_modes', {}).get('mode2')
+        selected_mode = form_values.get('research_mode', '')
+
+        if selected_mode not in (mode1_name, mode2_name):
+            error_message = 'Выберите корректный режим исследования.'
+
+        if error_message is None and selected_mode == mode1_name:
+            coating = form_values.get('coating', '')
+            tool_material = form_values.get('tool_material', '')
+            processed_material = form_values.get('processed_material', '')
+            alloying_element = form_values.get('alloying_element', '')
+            content_raw = form_values.get('alloying_content', '')
+
+            if not coating:
+                error_message = 'Выберите износостойкое покрытие.'
+            elif not tool_material:
+                error_message = 'Выберите инструментальный материал.'
+            elif not processed_material:
+                error_message = 'Выберите обрабатываемый материал.'
+            elif not alloying_element:
+                error_message = 'Выберите легирующий элемент.'
+            else:
+                allowed_elements = lab.get('alloying_by_coating', {}).get(coating, [])
+                if alloying_element not in allowed_elements:
+                    error_message = 'Выбранный легирующий элемент недоступен для указанного покрытия.'
+
+            content_value = None
+            if error_message is None:
+                try:
+                    content_value = float(content_raw.replace(',', '.'))
+                except ValueError:
+                    error_message = 'Содержание легирующего элемента должно быть числом.'
+
+            if error_message is None:
+                content_range = lab.get('content_ranges', {}).get(coating, {}).get(alloying_element)
+                if content_range is None:
+                    error_message = 'Для выбранной пары покрытие + легирующий элемент диапазон не задан.'
+                else:
+                    min_value, max_value = content_range
+                    if not (min_value <= content_value <= max_value):
+                        error_message = (
+                            f'Содержание легирующего элемента должно быть в диапазоне '
+                            f'{min_value:.2f}-{max_value:.2f} %.'
+                        )
+
+            if error_message is None:
+                try:
+                    cgamma_value = _cubic_model(content_value, LAB4_CGAMMA_COEFFS[coating][tool_material][alloying_element])
+                    kl_value = _cubic_model(content_value, LAB4_KL_COEFFS[coating][tool_material][alloying_element])
+                    px_value = _cubic_model(content_value, LAB4_PX_COEFFS[coating][tool_material][alloying_element])
+                    py_value = _cubic_model(content_value, LAB4_PY_COEFFS[coating][tool_material][alloying_element])
+                    pz_value = _cubic_model(content_value, LAB4_PZ_COEFFS[coating][tool_material][alloying_element])
+
+                    calculated_results = {
+                        '_mode': 'mode1',
+                        'Cγ, мм': f'{cgamma_value:.3f}',
+                        'KL': f'{kl_value:.3f}',
+                        'Px, Н': f'{px_value:.3f}',
+                        'Py, Н': f'{py_value:.3f}',
+                        'Pz, Н': f'{pz_value:.3f}',
+                    }
+
+                    graph_data = _build_lab4_mode1_graph_data(
+                        coating=coating,
+                        tool_material=tool_material,
+                        alloying_element=alloying_element,
+                        content_range=lab['content_ranges'][coating][alloying_element],
+                    )
+                except KeyError:
+                    error_message = 'Для выбранной комбинации отсутствуют коэффициенты расчета.'
+
+        if error_message is None and selected_mode == mode2_name:
+            coating = form_values.get('coating', '')
+
+            if not coating:
+                error_message = 'Выберите покрытие.'
+            else:
+                composition = LAB4_COMPOSITION_RESULTS.get(coating)
+                if composition is None:
+                    error_message = 'Для выбранного покрытия отсутствуют данные таблицы 6.'
+
+            if error_message is None:
+                calculated_results = {
+                    '_mode': 'mode2',
+                    'Cγ': f'{composition["cgamma"]:g}',
+                    'KL': f'{composition["kl"]:g}',
+                    'Pz, Н': f'{composition["pz"]:g}',
+                    'Nγ, Н': f'{composition["ngamma"]:g}',
+                    'Fγ, Н': f'{composition["fgamma"]:g}',
+                    'qN, МПа': f'{composition["qn"]:g}',
+                    'qF, МПа': f'{composition["qf"]:g}',
+                    'σN, МПа': f'{composition["sigma_n"]:g}',
+                    'τF, МПа': f'{composition["tau_f"]:g}',
+                }
+
+                graph_data = _build_lab4_mode2_chart_data()
 
     
 
