@@ -145,7 +145,7 @@ def _build_form_fields_with_values(lab: dict, form_values: dict) -> list:
     for field in lab.get('form_fields', []):
         prepared = field.copy()
 
-        if lab.get('id') in (1, 2, 4) and field.get('name') == 'alloying_element':
+        if lab.get('id') in (1, 2, 4, 5) and field.get('name') == 'alloying_element':
             allowed_elements = lab.get('alloying_by_coating', {}).get(selected_coating, field.get('options', []))
             prepared['options'] = allowed_elements
 
@@ -701,6 +701,65 @@ def _build_lab4_mode2_chart_data() -> dict:
     }
 
 
+LAB5_THERMAL_STATE_RESULTS = {
+    'Отрезка': {
+        'Без покрытия': {'Qп': 85.1, 'Qз': -1.2, 'qп': 21.3, 'qз': -24.1, 'Тп.ср.': 849, 'Тз.ср.': 440},
+        'TiN': {'Qп': 74.6, 'Qз': -1.1, 'qп': 22.0, 'qз': -25.4, 'Тп.ср.': 804, 'Тз.ср.': 380},
+        'TiAlN': {'Qп': 77.9, 'Qз': -1.1, 'qп': 21.4, 'qз': -24.6, 'Тп.ср.': 810, 'Тз.ср.': 396},
+        'TiAlCrN': {'Qп': 78.2, 'Qз': -1.1, 'qп': 20.4, 'qз': -23.4, 'Тп.ср.': 805, 'Тз.ср.': 389},
+    },
+    'Нарезание резьбы': {
+        'Без покрытия': {'Qп': 45.0, 'Qз': -1.05, 'qп': 6.48, 'qз': -8.32, 'Тп.ср.': 656, 'Тз.ср.': 359},
+        'TiN': {'Qп': 34.75, 'Qз': -0.7, 'qп': 6.41, 'qз': -7.87, 'Тп.ср.': 636, 'Тз.ср.': 340},
+        'TiCrN': {'Qп': 36.57, 'Qз': -0.73, 'qп': 5.53, 'qз': -5.81, 'Тп.ср.': 648, 'Тз.ср.': 341},
+        'TiCrZrN': {'Qп': 41.21, 'Qз': -0.76, 'qп': 3.5, 'qз': -4.14, 'Тп.ср.': 653, 'Тз.ср.': 355},
+    },
+}
+
+
+LAB5_HEAT_BALANCE_RESULTS = {
+    'Нарезание резьбы': {
+        'Без покрытия': {'стружка': 65, 'инструмент': 27, 'заготовка': 8},
+        'TiN': {'стружка': 73, 'инструмент': 18, 'заготовка': 9},
+        'TiCrN': {'стружка': 74, 'инструмент': 16, 'заготовка': 10},
+        'TiCrZrN': {'стружка': 76, 'инструмент': 14, 'заготовка': 10},
+    },
+    'Торцовое фрезерование': {
+        'Без покрытия': {'стружка': 69.1, 'инструмент': 13.4, 'заготовка': 17.5},
+        'TiN': {'стружка': 75.4, 'инструмент': 8.8, 'заготовка': 15.8},
+        'TiZrN': {'стружка': 76.6, 'инструмент': 10.2, 'заготовка': 16.2},
+        'TiZrCN': {'стружка': 73.4, 'инструмент': 10.6, 'заготовка': 15.9},
+    },
+}
+
+
+def _build_lab5_mode2_chart_data(operation_type: str) -> dict:
+    coatings = list(LAB5_THERMAL_STATE_RESULTS[operation_type].keys())
+    return {
+        'mode': 'mode2',
+        'operation_type': operation_type,
+        'coatings': coatings,
+        'qp_values': [LAB5_THERMAL_STATE_RESULTS[operation_type][item]['Qп'] for item in coatings],
+        'qz_values': [LAB5_THERMAL_STATE_RESULTS[operation_type][item]['Qз'] for item in coatings],
+        'qpi_values': [LAB5_THERMAL_STATE_RESULTS[operation_type][item]['qп'] for item in coatings],
+        'qzi_values': [LAB5_THERMAL_STATE_RESULTS[operation_type][item]['qз'] for item in coatings],
+        'tp_avg_values': [LAB5_THERMAL_STATE_RESULTS[operation_type][item]['Тп.ср.'] for item in coatings],
+        'tz_avg_values': [LAB5_THERMAL_STATE_RESULTS[operation_type][item]['Тз.ср.'] for item in coatings],
+    }
+
+
+def _build_lab5_mode3_chart_data(operation_type: str) -> dict:
+    coatings = list(LAB5_HEAT_BALANCE_RESULTS[operation_type].keys())
+    return {
+        'mode': 'mode3',
+        'operation_type': operation_type,
+        'coatings': coatings,
+        'chip_values': [LAB5_HEAT_BALANCE_RESULTS[operation_type][item]['стружка'] for item in coatings],
+        'tool_values': [LAB5_HEAT_BALANCE_RESULTS[operation_type][item]['инструмент'] for item in coatings],
+        'workpiece_values': [LAB5_HEAT_BALANCE_RESULTS[operation_type][item]['заготовка'] for item in coatings],
+    }
+
+
 LABS_DATA = [
     {
         'id': 1,
@@ -1008,9 +1067,119 @@ LABS_DATA = [
     {
         'id': 5,
         'title': 'Исследование теплового состояния режущего клина инструмента',
-        'algorithm': ['Данные из ТЗ для этой лабораторной пока не переданы.'],
-        'form_fields': [],
-        'result_fields': [],
+        'algorithm': [
+            'выбирается режим исследования: влияние содержания легирующего элемента, влияние состава покрытия на показатели теплового состояния или влияние состава покрытия на тепловой баланс',
+            'для режима влияния содержания выбираются покрытие, инструментальный материал, обрабатываемый материал, легирующий элемент и его содержание C',
+            'для режима влияния состава покрытия выбирается тип операции и покрытие',
+            'определяются тепловые характеристики согласно таблицам ТЗ',
+            'строятся линейные графики или столбчатые диаграммы в зависимости от режима',
+        ],
+        'form_fields': [
+            {
+                'name': 'research_mode',
+                'label': 'режим исследования',
+                'type': 'select',
+                'options': [
+                    'Влияние содержания легирующего элемента',
+                    'Влияние состава покрытия на показатели теплового состояния',
+                    'Влияние состава покрытия на тепловой баланс',
+                ],
+            },
+            {
+                'name': 'coating',
+                'label': 'износостойкое покрытие',
+                'type': 'select',
+                'options': ['TiAlMe2N', 'TiZrMe2N', 'TiSiMe2N', 'Без покрытия', 'TiN', 'TiAlN', 'TiAlCrN', 'TiCrN', 'TiCrZrN', 'TiZrN', 'TiZrCN'],
+            },
+            {
+                'name': 'tool_material',
+                'label': 'инструментальный материал',
+                'type': 'select',
+                'options': ['МК8', 'Р6М5К5'],
+            },
+            {
+                'name': 'processed_material',
+                'label': 'обрабатываемый материал',
+                'type': 'select',
+                'options': ['30ХГСА', '12Х18Н10Т'],
+            },
+            {
+                'name': 'alloying_element',
+                'label': 'легирующий элемент',
+                'type': 'select',
+                'options': ['Fe', 'Cr', 'Zr', 'Al'],
+            },
+            {
+                'name': 'alloying_content',
+                'label': 'содержание легирующего элемента, %',
+                'type': 'text',
+                'placeholder': 'Введите значение, %',
+            },
+            {
+                'name': 'operation_type',
+                'label': 'тип операции',
+                'type': 'select',
+                'options': ['Отрезка', 'Нарезание резьбы'],
+            },
+            {
+                'name': 'composition_coating',
+                'label': 'покрытие',
+                'type': 'select',
+                'options': ['Без покрытия', 'TiN', 'TiAlN', 'TiAlCrN', 'TiCrN', 'TiCrZrN'],
+            },
+            {
+                'name': 'balance_operation_type',
+                'label': 'тип операции',
+                'type': 'select',
+                'options': ['Нарезание резьбы', 'Торцовое фрезерование'],
+            },
+            {
+                'name': 'balance_coating',
+                'label': 'покрытие',
+                'type': 'select',
+                'options': ['Без покрытия', 'TiN', 'TiCrN', 'TiCrZrN', 'TiZrN', 'TiZrCN'],
+            },
+        ],
+        'research_modes': {
+            'mode1': 'Влияние содержания легирующего элемента',
+            'mode2': 'Влияние состава покрытия на показатели теплового состояния',
+            'mode3': 'Влияние состава покрытия на тепловой баланс',
+        },
+        'alloying_by_coating': {
+            'TiAlMe2N': ['Fe', 'Cr', 'Zr'],
+            'TiZrMe2N': ['Fe', 'Cr', 'Al'],
+            'TiSiMe2N': ['Cr', 'Zr', 'Al'],
+        },
+        'content_ranges': {
+            'TiAlMe2N': {
+                'Fe': (0.43, 1.22),
+                'Cr': (1.35, 11.12),
+                'Zr': (4.61, 23.39),
+            },
+            'TiZrMe2N': {
+                'Fe': (0.49, 0.94),
+                'Cr': (1.44, 11.28),
+                'Al': (6.36, 9.25),
+            },
+            'TiSiMe2N': {
+                'Cr': (6.12, 11.37),
+                'Zr': (7.81, 24.74),
+                'Al': (6.45, 9.16),
+            },
+        },
+        'operation_type_coatings': {
+            'Отрезка': ['Без покрытия', 'TiN', 'TiAlN', 'TiAlCrN'],
+            'Нарезание резьбы': ['Без покрытия', 'TiN', 'TiCrN', 'TiCrZrN'],
+        },
+        'balance_operation_type_coatings': {
+            'Нарезание резьбы': ['Без покрытия', 'TiN', 'TiCrN', 'TiCrZrN'],
+            'Торцовое фрезерование': ['Без покрытия', 'TiN', 'TiZrN', 'TiZrCN'],
+        },
+        'result_fields': {
+            'mode1': [],
+            'mode2': ['Qп', 'Qз', 'qп', 'qз', 'Тп.ср.', 'Тз.ср.'],
+            'mode3': ['стружка', 'инструмент', 'заготовка'],
+        },
     },
     {
         'id': 6,
@@ -1117,6 +1286,41 @@ def lab_page(request, lab_id: int):
         allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
         if allowed_elements:
             form_values['alloying_element'] = allowed_elements[0]
+
+    if request.method == 'GET' and lab_id == 5:
+        mode_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'research_mode'), [])
+        coating_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'coating'), [])
+        tool_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'tool_material'), [])
+        proc_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'processed_material'), [])
+        op_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'operation_type'), [])
+        comp_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'composition_coating'), [])
+        balance_op_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'balance_operation_type'), [])
+        balance_comp_options = next((f['options'] for f in lab.get('form_fields', []) if f.get('name') == 'balance_coating'), [])
+
+        if mode_options:
+            form_values['research_mode'] = mode_options[0]
+        if coating_options:
+            form_values['coating'] = coating_options[0]
+        if tool_options:
+            form_values['tool_material'] = tool_options[0]
+        if proc_options:
+            form_values['processed_material'] = proc_options[0]
+        if op_options:
+            form_values['operation_type'] = op_options[0]
+        if balance_op_options:
+            form_values['balance_operation_type'] = balance_op_options[0]
+
+        allowed_elements = lab.get('alloying_by_coating', {}).get(form_values['coating'], [])
+        if allowed_elements:
+            form_values['alloying_element'] = allowed_elements[0]
+
+        operation_coatings = lab.get('operation_type_coatings', {}).get(form_values.get('operation_type', ''), [])
+        if operation_coatings and comp_options:
+            form_values['composition_coating'] = operation_coatings[0]
+
+        balance_operation_coatings = lab.get('balance_operation_type_coatings', {}).get(form_values.get('balance_operation_type', ''), [])
+        if balance_operation_coatings and balance_comp_options:
+            form_values['balance_coating'] = balance_operation_coatings[0]
 
     if request.method == 'POST' and lab_id == 1:
         form_values['coating'] = request.POST.get('coating', '').strip()
@@ -1420,6 +1624,83 @@ def lab_page(request, lab_id: int):
                 }
 
                 graph_data = _build_lab4_mode2_chart_data()
+
+    if request.method == 'POST' and lab_id == 5:
+        for field in lab.get('form_fields', []):
+            name = field.get('name')
+            form_values[name] = request.POST.get(name, '').strip()
+
+        mode1_name = lab.get('research_modes', {}).get('mode1')
+        mode2_name = lab.get('research_modes', {}).get('mode2')
+        mode3_name = lab.get('research_modes', {}).get('mode3')
+        selected_mode = form_values.get('research_mode', '')
+
+        if selected_mode not in (mode1_name, mode2_name, mode3_name):
+            error_message = 'Выберите корректный режим исследования.'
+
+        if error_message is None and selected_mode == mode1_name:
+            error_message = 'Для режима влияния содержания легирующего элемента коэффициенты пока не внесены.'
+
+        if error_message is None and selected_mode == mode2_name:
+            operation_type = form_values.get('operation_type', '')
+            coating = form_values.get('composition_coating', '')
+
+            if not operation_type:
+                error_message = 'Выберите тип операции.'
+            elif not coating:
+                error_message = 'Выберите покрытие.'
+            else:
+                allowed_coatings = lab.get('operation_type_coatings', {}).get(operation_type, [])
+                if coating not in allowed_coatings:
+                    error_message = 'Выбранное покрытие недоступно для указанного типа операции.'
+
+            if error_message is None:
+                operation_results = LAB5_THERMAL_STATE_RESULTS.get(operation_type, {})
+                coating_results = operation_results.get(coating)
+
+                if coating_results is None:
+                    error_message = 'Для выбранной комбинации отсутствуют данные таблицы 7.'
+                else:
+                    calculated_results = {
+                        '_mode': 'mode2',
+                        'Qп': f'{coating_results["Qп"]:g}',
+                        'Qз': f'{coating_results["Qз"]:g}',
+                        'qп': f'{coating_results["qп"]:g}',
+                        'qз': f'{coating_results["qз"]:g}',
+                        'Тп.ср.': f'{coating_results["Тп.ср."]:g}',
+                        'Тз.ср.': f'{coating_results["Тз.ср."]:g}',
+                    }
+
+                    graph_data = _build_lab5_mode2_chart_data(operation_type)
+
+        if error_message is None and selected_mode == mode3_name:
+            operation_type = form_values.get('balance_operation_type', '')
+            coating = form_values.get('balance_coating', '')
+
+            if not operation_type:
+                error_message = 'Выберите тип операции.'
+            elif not coating:
+                error_message = 'Выберите покрытие.'
+            else:
+                allowed_coatings = lab.get('balance_operation_type_coatings', {}).get(operation_type, [])
+                if coating not in allowed_coatings:
+                    error_message = 'Выбранное покрытие недоступно для указанного типа операции.'
+
+            if error_message is None:
+                operation_results = LAB5_HEAT_BALANCE_RESULTS.get(operation_type, {})
+                coating_results = operation_results.get(coating)
+
+                if coating_results is None:
+                    error_message = 'Для выбранной комбинации отсутствуют данные таблицы 8.'
+                else:
+                    calculated_results = {
+                        '_mode': 'mode3',
+                        'стружка': f'{coating_results["стружка"]:g}',
+                        'инструмент': f'{coating_results["инструмент"]:g}',
+                        'заготовка': f'{coating_results["заготовка"]:g}',
+                    }
+
+                    graph_data = _build_lab5_mode3_chart_data(operation_type)
 
     
 
