@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="d-flex mb-3 justify-content-between">
-  <span class="d-inline-block fw-bold h5">{{ lab.title }}</span>
+  <span class="d-inline-block fw-bold h5">Лабораторная работа №{{ lab.id }}: {{ lab.title }}</span>
   <a href="{% url 'labs_list' %}" class="btn btn-outline-primary btn-sm">К списку лабораторных</a>
 </div>
 
@@ -91,6 +91,19 @@
       </div>
       {% endfor %}
     </div>
+
+    <form method="post" class="d-flex flex-wrap gap-2 mb-3">
+      {% csrf_token %}
+      {% for field in form_fields %}
+      <input type="hidden" name="{{ field.name }}" value="{{ field.current_value }}">
+      {% endfor %}
+      <button type="submit" name="export_format" value="pdf" class="btn btn-outline-danger btn-sm">
+        Выгрузить PDF
+      </button>
+      <button type="submit" name="export_format" value="xlsx" class="btn btn-outline-success btn-sm">
+        Выгрузить Excel
+      </button>
+    </form>
     {% else %}
     <div class="p-3 border rounded bg-light text-muted mb-3">
       Данные результатов для этой лабораторной пока не переданы.
@@ -453,26 +466,14 @@
       <div class="row g-3">
         <div class="col-12 col-lg-6">
           <div class="p-2 border rounded bg-light">
-            <p class="mb-2 text-muted">K(V)</p>
-            <canvas id="chart-lab7-k"></canvas>
+            <p class="mb-2 text-muted">T(V), мин</p>
+            <canvas id="chart-lab7-speed"></canvas>
           </div>
         </div>
         <div class="col-12 col-lg-6">
           <div class="p-2 border rounded bg-light">
-            <p class="mb-2 text-muted">I(V)</p>
-            <canvas id="chart-lab7-i"></canvas>
-          </div>
-        </div>
-        <div class="col-12 col-lg-6">
-          <div class="p-2 border rounded bg-light">
-            <p class="mb-2 text-muted">R(V)</p>
-            <canvas id="chart-lab7-r"></canvas>
-          </div>
-        </div>
-        <div class="col-12 col-lg-6">
-          <div class="p-2 border rounded bg-light">
-            <p class="mb-2 text-muted">Tcoef(V)</p>
-            <canvas id="chart-lab7-tcoef"></canvas>
+            <p class="mb-2 text-muted">T(S), мин</p>
+            <canvas id="chart-lab7-feed"></canvas>
           </div>
         </div>
       </div>
@@ -811,7 +812,7 @@
       const rect = canvas.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
       const width = Math.max(320, Math.floor(rect.width));
-      const height = 240;
+      const height = 280;
 
       canvas.width = width * ratio;
       canvas.height = height * ratio;
@@ -822,6 +823,29 @@
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
       return { ctx: ctx, width: width, height: height };
+    }
+
+    function formatNumber(value) {
+      if (!Number.isFinite(value)) return "";
+      const absValue = Math.abs(value);
+
+      if (absValue !== 0 && absValue < 0.001) return value.toExponential(1).replace(".", ",");
+      if (absValue >= 1000) return Math.round(value).toLocaleString("ru-RU");
+      if (absValue >= 100) return value.toFixed(1).replace(".", ",");
+      if (absValue >= 10) return value.toFixed(2).replace(".", ",");
+      return value.toFixed(4).replace(/0+$/, "").replace(/,$/, "");
+    }
+
+    function buildTicks(minValue, maxValue, count) {
+      const ticks = [];
+      if (minValue === maxValue) {
+        return [minValue];
+      }
+
+      for (let i = 0; i < count; i++) {
+        ticks.push(minValue + ((maxValue - minValue) * i) / (count - 1));
+      }
+      return ticks;
     }
 
     function drawLineChart(canvasId, xValues, yValues, color) {
@@ -836,23 +860,53 @@
       const width = prepared.width;
       const height = prepared.height;
 
-      const paddingLeft = 46;
-      const paddingRight = 16;
-      const paddingTop = 18;
-      const paddingBottom = 36;
+      const paddingLeft = 64;
+      const paddingRight = 22;
+      const paddingTop = 24;
+      const paddingBottom = 52;
       const plotWidth = width - paddingLeft - paddingRight;
       const plotHeight = height - paddingTop - paddingBottom;
 
       const minX = Math.min.apply(null, xValues);
       const maxX = Math.max.apply(null, xValues);
-      const minY = Math.min.apply(null, yValues);
-      const maxY = Math.max.apply(null, yValues);
+      let minY = Math.min.apply(null, yValues);
+      let maxY = Math.max.apply(null, yValues);
+
+      if (minY !== maxY) {
+        const yPadding = (maxY - minY) * 0.08;
+        minY -= yPadding;
+        maxY += yPadding;
+      }
+
       const ySpan = maxY - minY === 0 ? 1 : maxY - minY;
       const xSpan = maxX - minX === 0 ? 1 : maxX - minX;
 
       ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
 
-      ctx.strokeStyle = "#9aa1a8";
+      const xTicks = buildTicks(minX, maxX, 5);
+      const yTicks = buildTicks(minY, maxY, 5);
+
+      ctx.strokeStyle = "#e9ecef";
+      ctx.lineWidth = 1;
+      yTicks.forEach(function (tick) {
+        const y = paddingTop + plotHeight - ((tick - minY) / ySpan) * plotHeight;
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(paddingLeft + plotWidth, y);
+        ctx.stroke();
+      });
+
+      xTicks.forEach(function (tick) {
+        const x = paddingLeft + ((tick - minX) / xSpan) * plotWidth;
+        ctx.beginPath();
+        ctx.moveTo(x, paddingTop);
+        ctx.lineTo(x, paddingTop + plotHeight);
+        ctx.stroke();
+      });
+
+      ctx.strokeStyle = "#6c757d";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(paddingLeft, paddingTop);
@@ -861,7 +915,7 @@
       ctx.stroke();
 
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
 
       for (let i = 0; i < xValues.length; i++) {
@@ -874,12 +928,30 @@
 
       ctx.stroke();
 
+      ctx.fillStyle = color;
+      for (let i = 0; i < xValues.length; i += Math.max(1, Math.floor(xValues.length / 8))) {
+        const x = paddingLeft + ((xValues[i] - minX) / xSpan) * plotWidth;
+        const y = paddingTop + plotHeight - ((yValues[i] - minY) / ySpan) * plotHeight;
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.fillStyle = "#6c757d";
-      ctx.font = "10px sans-serif";
-      ctx.fillText(String(minY).replace(".", ","), 4, paddingTop + plotHeight + 4);
-      ctx.fillText(String(maxY).replace(".", ","), 4, paddingTop + 6);
-      ctx.fillText(String(minX).replace(".", ","), paddingLeft, height - 8);
-      ctx.fillText(String(maxX).replace(".", ","), paddingLeft + plotWidth - 28, height - 8);
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      yTicks.forEach(function (tick) {
+        const y = paddingTop + plotHeight - ((tick - minY) / ySpan) * plotHeight;
+        ctx.fillText(formatNumber(tick), paddingLeft - 8, y);
+      });
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      xTicks.forEach(function (tick) {
+        const x = paddingLeft + ((tick - minX) / xSpan) * plotWidth;
+        ctx.fillText(formatNumber(tick), x, paddingTop + plotHeight + 10);
+      });
     }
 
     function drawBarChart(canvasId, labels, values, color) {
@@ -894,10 +966,10 @@
       const width = prepared.width;
       const height = prepared.height;
 
-      const paddingLeft = 58;
-      const paddingRight = 18;
-      const paddingTop = 22;
-      const paddingBottom = 92;
+      const paddingLeft = 64;
+      const paddingRight = 22;
+      const paddingTop = 24;
+      const paddingBottom = 98;
       const plotWidth = width - paddingLeft - paddingRight;
       const plotHeight = height - paddingTop - paddingBottom;
 
@@ -921,8 +993,21 @@
       const baselineY = toCanvasY(0);
 
       ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
 
-      ctx.strokeStyle = "#c5cbd1";
+      const yTicks = buildTicks(minY, maxY, 5);
+      ctx.strokeStyle = "#e9ecef";
+      ctx.lineWidth = 1;
+      yTicks.forEach(function (tick) {
+        const y = toCanvasY(tick);
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(paddingLeft + plotWidth, y);
+        ctx.stroke();
+      });
+
+      ctx.strokeStyle = "#6c757d";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(paddingLeft, paddingTop);
@@ -947,6 +1032,12 @@
         ctx.fillStyle = color;
         ctx.fillRect(x, y, barWidth, barHeight);
 
+        ctx.fillStyle = "#495057";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = value >= 0 ? "bottom" : "top";
+        ctx.fillText(formatNumber(value), x + barWidth / 2, value >= 0 ? y - 4 : y + barHeight + 4);
+
         ctx.fillStyle = "#6c757d";
         ctx.font = "9px sans-serif";
         ctx.save();
@@ -959,13 +1050,12 @@
       }
 
       ctx.fillStyle = "#6c757d";
-      ctx.font = "10px sans-serif";
+      ctx.font = "11px sans-serif";
       ctx.textAlign = "right";
-      ctx.fillText(String(maxY).replace(".", ","), paddingLeft - 8, paddingTop + 6);
-      if (minY < 0) {
-        ctx.fillText(String(minY).replace(".", ","), paddingLeft - 8, paddingTop + plotHeight + 4);
-      }
-      ctx.fillText("0", paddingLeft - 4, baselineY + 4);
+      ctx.textBaseline = "middle";
+      yTicks.forEach(function (tick) {
+        ctx.fillText(formatNumber(tick), paddingLeft - 8, toCanvasY(tick));
+      });
     }
 
     if (document.getElementById("chart-a")) {
@@ -1038,11 +1128,9 @@
       drawBarChart("chart-lab6-comp-sigma_sum", labels6, graphData.sigma_sum_values || [], "#fd7e14");
     }
 
-    if (document.getElementById("chart-lab7-k")) {
-      drawLineChart("chart-lab7-k", graphData.speed_values, graphData.k_values, "#0d6efd");
-      drawLineChart("chart-lab7-i", graphData.speed_values, graphData.i_values, "#dc3545");
-      drawLineChart("chart-lab7-r", graphData.speed_values, graphData.r_values, "#198754");
-      drawLineChart("chart-lab7-tcoef", graphData.speed_values, graphData.tcoef_values, "#6f42c1");
+    if (document.getElementById("chart-lab7-speed")) {
+      drawLineChart("chart-lab7-speed", graphData.speed_values, graphData.t_by_speed_values, "#0d6efd");
+      drawLineChart("chart-lab7-feed", graphData.feed_values, graphData.t_by_feed_values, "#198754");
     }
 
     if (document.getElementById("chart-lab5-qp")) {

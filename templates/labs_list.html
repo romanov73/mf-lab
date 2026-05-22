@@ -8,7 +8,7 @@
   <div
     class="border border-primary rounded bg-white p-3 mb-3 d-flex justify-content-between align-items-center"
   >
-    <span class="me-3">{{ lab.title }}</span>
+    <span class="me-3">Лабораторная работа №{{ lab.id }}: {{ lab.title }}</span>
     <a
       href="{% url 'lab_page' lab_id=lab.id %}"
       class="btn btn-outline-primary btn-sm"

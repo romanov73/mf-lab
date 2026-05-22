@@ -1,4 +1,6 @@
 import json
+import io
+from urllib.parse import quote
 
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, HttpResponse, Http404
@@ -148,6 +150,369 @@ def _build_result_items(lab: dict, calculated_results: dict | None = None) -> li
     ]
 
 
+def _format_export_filename(lab: dict, extension: str) -> str:
+    return f"laboratornaya_{lab['id']}.{extension}"
+
+
+def _export_response(content: bytes, filename: str, content_type: str) -> HttpResponse:
+    response = HttpResponse(content, content_type=content_type)
+    response['Content-Disposition'] = f"attachment; filename*=UTF-8''{quote(filename)}"
+    return response
+
+
+def _selected_lab_parameters(form_fields: list[dict]) -> list[tuple[str, str]]:
+    return [
+        (field.get('label', field.get('name', '')), str(field.get('current_value', '')))
+        for field in form_fields
+        if field.get('current_value') not in (None, '')
+    ]
+
+
+GRAPH_SERIES_LABELS = {
+    'a_values': 'a(C)',
+    'beta_values': 'β111(C)',
+    'sigma_values': 'σ0(C)',
+    'hmu_values': 'Hµ(C)',
+    'e_values': 'E(C)',
+    'kicp_values': 'KICП(C)',
+    'k0_values': 'K0(C)',
+    'tc_values': 'tц(C)',
+    'j_values': 'J(C)',
+    'cgamma_values': 'Cγ(C)',
+    'kl_values': 'KL(C)',
+    'px_values': 'Px(C)',
+    'py_values': 'Py(C)',
+    'pz_values': 'Pz(C)',
+    'ngamma_values': 'Nγ',
+    'fgamma_values': 'Fγ',
+    'qn_values': 'qN(C)',
+    'qf_values': 'qF(C)',
+    'sigma_n_values': 'σN(C)',
+    'tau_f_values': 'τF(C)',
+    'qp_values': 'Qп(C)',
+    'qz_values': 'Qз(C)',
+    'qpi_values': 'qп(C)',
+    'qzi_values': 'qз(C)',
+    'tp_avg_values': 'Тп.ср.(C)',
+    'tz_avg_values': 'Тз.ср.(C)',
+    'chip_values': 'стружка',
+    'tool_values': 'инструмент',
+    'workpiece_values': 'заготовка',
+    'sigma1_values': 'σ1',
+    'sigma_ost_values': 'σост',
+    'sigma_t_values': 'σТ',
+    'sigma_sum_values': 'σΣ',
+    'sigma_max_values': 'σmax(C)',
+    't_by_speed_values': 'T(V), мин',
+    't_by_feed_values': 'T(S), мин',
+}
+
+
+def _graph_series_label(key: str) -> str:
+    return GRAPH_SERIES_LABELS.get(key, key)
+
+
+def _graph_series_from_data(graph_data: dict | None) -> tuple[str, list, list[tuple[str, list]], bool]:
+    if not graph_data:
+        return '', [], [], False
+
+    x_key = next(
+        (key for key in ('c_values', 'speed_values', 'coatings', 'labels') if key in graph_data),
+        None,
+    )
+    if not x_key:
+        return '', [], [], False
+
+    x_values = graph_data.get(x_key) or []
+    series = []
+    for key, value in graph_data.items():
+        if key == x_key or key in ('mode', 'operation_type'):
+            continue
+        if isinstance(value, list) and len(value) == len(x_values):
+            series.append((_graph_series_label(key), value))
+
+    is_numeric_x = all(isinstance(value, (int, float)) for value in x_values)
+    return x_key, x_values, series, is_numeric_x
+
+
+def _graph_charts_from_data(graph_data: dict | None) -> list[tuple[str, list, list[tuple[str, list]], bool]]:
+    if not graph_data:
+        return []
+
+    prepared_charts = []
+    for chart_data in graph_data.get('charts', []):
+        x_values = chart_data.get('x_values') or []
+        series = []
+        for item in chart_data.get('series', []):
+            values = item.get('values') or []
+            if isinstance(values, list) and len(values) == len(x_values):
+                series.append((item.get('label', ''), values))
+        if x_values and series:
+            prepared_charts.append((
+                chart_data.get('x_label', ''),
+                x_values,
+                series,
+                bool(chart_data.get('numeric_x', True)),
+            ))
+
+    if prepared_charts:
+        return prepared_charts
+
+    x_key, x_values, series, is_numeric_x = _graph_series_from_data(graph_data)
+    if x_values and series:
+        return [(x_key, x_values, series, is_numeric_x)]
+    return []
+
+
+def _build_lab_export_pdf(lab: dict, form_fields: list[dict], result_items: list[dict], graph_data: dict | None) -> bytes:
+    from reportlab.graphics.charts.barcharts import VerticalBarChart
+    from reportlab.graphics.charts.lineplots import LinePlot
+    from reportlab.graphics.shapes import Drawing
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    font_path = '/System/Library/Fonts/Supplemental/Arial.ttf'
+    bold_font_path = '/System/Library/Fonts/Supplemental/Arial Bold.ttf'
+    try:
+        pdfmetrics.registerFont(TTFont('ExportArial', font_path))
+        pdfmetrics.registerFont(TTFont('ExportArialBold', bold_font_path))
+    except Exception:
+        pass
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm,
+    )
+
+    styles = getSampleStyleSheet()
+    base_font = 'ExportArial'
+    bold_font = 'ExportArialBold'
+    title_style = ParagraphStyle(
+        'ExportTitle',
+        parent=styles['Title'],
+        fontName=bold_font,
+        fontSize=16,
+        leading=20,
+        alignment=TA_CENTER,
+    )
+    heading_style = ParagraphStyle(
+        'ExportHeading',
+        parent=styles['Heading2'],
+        fontName=bold_font,
+        fontSize=12,
+        leading=15,
+    )
+    body_style = ParagraphStyle(
+        'ExportBody',
+        parent=styles['BodyText'],
+        fontName=base_font,
+        fontSize=9,
+        leading=12,
+    )
+
+    elements = [
+        Paragraph(f"Лабораторная работа {lab['id']}. {lab['title']}", title_style),
+        Spacer(1, 0.4 * cm),
+        Paragraph('Исходные данные', heading_style),
+    ]
+
+    parameter_rows = [['Параметр', 'Значение']]
+    parameter_rows.extend(_selected_lab_parameters(form_fields) or [['-', '-']])
+    parameter_table = Table(parameter_rows, colWidths=[7 * cm, 9 * cm])
+    parameter_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), base_font),
+        ('FONTNAME', (0, 0), (-1, 0), bold_font),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e9ecef')),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(parameter_table)
+    elements.append(Spacer(1, 0.35 * cm))
+
+    elements.append(Paragraph('Результаты расчета', heading_style))
+    result_rows = [['Показатель', 'Значение']]
+    result_rows.extend([(item['label'], str(item['value'])) for item in result_items] or [['-', '-']])
+    result_table = Table(result_rows, colWidths=[8 * cm, 8 * cm])
+    result_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), base_font),
+        ('FONTNAME', (0, 0), (-1, 0), bold_font),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e9ecef')),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(result_table)
+
+    charts = _graph_charts_from_data(graph_data)
+    if charts:
+        elements.append(Spacer(1, 0.35 * cm))
+        elements.append(Paragraph('Графики', heading_style))
+
+        palette = [colors.HexColor('#0d6efd'), colors.HexColor('#198754'), colors.HexColor('#dc3545'), colors.HexColor('#fd7e14')]
+
+        for x_key, x_values, series, is_numeric_x in charts:
+            for index, (series_name, values) in enumerate(series):
+                drawing = Drawing(460, 235)
+
+                if is_numeric_x:
+                    chart = LinePlot()
+                    chart.x = 45
+                    chart.y = 35
+                    chart.width = 380
+                    chart.height = 160
+                    chart.data = [list(zip(x_values, [float(item) for item in values]))]
+                    chart.lines[0].strokeWidth = 1.8
+                    chart.lines[0].strokeColor = palette[index % len(palette)]
+                    chart.xValueAxis.valueMin = min(x_values)
+                    chart.xValueAxis.valueMax = max(x_values)
+                    drawing.add(chart)
+                else:
+                    chart = VerticalBarChart()
+                    chart.x = 45
+                    chart.y = 35
+                    chart.width = 380
+                    chart.height = 160
+                    chart.data = [[float(item) for item in values]]
+                    chart.categoryAxis.categoryNames = [str(value) for value in x_values]
+                    chart.barWidth = 10
+                    chart.bars[0].fillColor = palette[index % len(palette)]
+                    drawing.add(chart)
+
+                elements.append(Paragraph(series_name, body_style))
+                elements.append(drawing)
+                elements.append(Paragraph(f'Ось X: {x_key}', body_style))
+
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+def _build_lab_export_xlsx(lab: dict, form_fields: list[dict], result_items: list[dict], graph_data: dict | None) -> bytes:
+    from openpyxl import Workbook
+    from openpyxl.chart import BarChart, Reference, ScatterChart, Series
+    from openpyxl.styles import Font, PatternFill
+
+    workbook = Workbook()
+    summary = workbook.active
+    summary.title = 'Итог'
+    summary['A1'] = f"Лабораторная работа {lab['id']}"
+    summary['A2'] = lab['title']
+    summary['A1'].font = Font(bold=True, size=14)
+    summary['A2'].font = Font(bold=True)
+
+    row = 4
+    summary.cell(row=row, column=1, value='Исходные данные').font = Font(bold=True)
+    row += 1
+    summary.append(['Параметр', 'Значение'])
+    for cell in summary[row]:
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill('solid', fgColor='E9ECEF')
+    for label, value in _selected_lab_parameters(form_fields):
+        summary.append([label, value])
+
+    row = summary.max_row + 2
+    summary.cell(row=row, column=1, value='Результаты расчета').font = Font(bold=True)
+    row += 1
+    summary.append(['Показатель', 'Значение'])
+    for cell in summary[row]:
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill('solid', fgColor='E9ECEF')
+    for item in result_items:
+        summary.append([item['label'], item['value']])
+
+    for column in ('A', 'B'):
+        summary.column_dimensions[column].width = 42
+
+    charts = _graph_charts_from_data(graph_data)
+    if charts:
+        graph_sheet = workbook.create_sheet('Графики')
+        current_row = 1
+        chart_position = 0
+
+        for x_key, x_values, series, is_numeric_x in charts:
+            header_row = current_row
+            graph_sheet.cell(row=header_row, column=1, value=x_key)
+            for index, (series_name, _) in enumerate(series, start=2):
+                graph_sheet.cell(row=header_row, column=index, value=series_name)
+
+            for cell in graph_sheet[header_row]:
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill('solid', fgColor='E9ECEF')
+
+            for row_offset, values_row in enumerate(zip(x_values, *[values for _, values in series]), start=1):
+                for column_offset, value in enumerate(values_row, start=1):
+                    graph_sheet.cell(row=header_row + row_offset, column=column_offset, value=value)
+
+            data_start_row = header_row + 1
+            data_end_row = header_row + len(x_values)
+            categories = Reference(graph_sheet, min_col=1, min_row=data_start_row, max_row=data_end_row)
+
+            for index, (series_name, _) in enumerate(series, start=2):
+                if is_numeric_x:
+                    chart = ScatterChart()
+                    x_values_ref = Reference(graph_sheet, min_col=1, min_row=data_start_row, max_row=data_end_row)
+                    y_values_ref = Reference(graph_sheet, min_col=index, min_row=data_start_row, max_row=data_end_row)
+                    chart.series.append(Series(y_values_ref, x_values_ref, title=series_name))
+                else:
+                    chart = BarChart()
+                    data = Reference(graph_sheet, min_col=index, max_col=index, min_row=header_row, max_row=data_end_row)
+                    chart.add_data(data, titles_from_data=True)
+                    chart.set_categories(categories)
+
+                chart.title = series_name
+                chart.y_axis.title = series_name
+                chart.x_axis.title = x_key
+                chart.height = 8
+                chart.width = 14
+
+                chart_column = 'H' if chart_position % 2 == 0 else 'P'
+                chart_row = 2 + (chart_position // 2) * 16
+                graph_sheet.add_chart(chart, f'{chart_column}{chart_row}')
+                chart_position += 1
+
+            current_row = data_end_row + 3
+
+        for index in range(1, 8):
+            graph_sheet.column_dimensions[chr(64 + index)].width = 18
+
+    output = io.BytesIO()
+    workbook.save(output)
+    return output.getvalue()
+
+
+def _build_lab_export_response(
+    export_format: str,
+    lab: dict,
+    form_fields: list[dict],
+    result_items: list[dict],
+    graph_data: dict | None,
+) -> HttpResponse:
+    if export_format == 'pdf':
+        return _export_response(
+            _build_lab_export_pdf(lab, form_fields, result_items, graph_data),
+            _format_export_filename(lab, 'pdf'),
+            'application/pdf',
+        )
+
+    if export_format == 'xlsx':
+        return _export_response(
+            _build_lab_export_xlsx(lab, form_fields, result_items, graph_data),
+            _format_export_filename(lab, 'xlsx'),
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+    raise Http404()
+
+
 def _build_form_fields_with_values(lab: dict, form_values: dict) -> list:
     fields = []
     selected_coating = form_values.get('coating', '')
@@ -232,7 +597,7 @@ LAB2_K0_COEFFS = {
     },
     "TiSiMe2N": {
         "МК8": {
-            "Cr": {"A0": 1.493, "A1": 0.0684, "A2": -0.00268, "A3": 0},
+            "Cr": {"A0": 1.493, "A1": 0.0674, "A2": -0.00268, "A3": 0},
             "Zr": {"A0": 1.493, "A1": 0.0172, "A2": -0.00031, "A3": 0},
             "Al": {"A0": 1.493, "A1": -0.0652, "A2": 0.00334, "A3": 0},
         },
@@ -423,6 +788,7 @@ LAB3_J_COEFFS = {
                     "Al": {"A0": 0.826, "A1": -0.0807, "A2": 0.00492, "A3": 0},
                 },
                 "Р6М5К5": {
+                    "Fe": {"A0": 3.094, "A1": -0.412, "A2": -0.7246, "A3": 0.5283},
                     "Cr": {"A0": 3.094, "A1": -0.0848, "A2": -0.01032, "A3": 0.001268},
                     "Al": {"A0": 3.094, "A1": -0.2220, "A2": 0.01313, "A3": 0},
                 },
@@ -748,7 +1114,7 @@ LAB5_MODE1_COEFFS = {
             "МК8": {
                 "Fe": [47.7, 4.7, -1.54, -0.292],
                 "Cr": [47.7, 0.84, -0.08, 0.0025],
-                "Zr": [47.7, 0.15, -0.0034, -0.000043],
+                "Zr": [47.7, 0.15, -0.0034, -0.00043],
             },
             "Р6М5К5": {
                 "Fe": [14.4, 4.8, -3.80, 0.80],
@@ -909,6 +1275,7 @@ LAB5_MODE1_COEFFS = {
             "Р6М5К5": {
                 "Fe": [416, 39.5, -29.0, 5.5],
                 "Cr": [416, 3.50, -0.19, None],
+                "Zr": [416, 0, 0, None],
             },
         },
         "TiZrMe2N": {
@@ -1205,44 +1572,121 @@ LAB6_COMPOSITION_DATA = {
     }
 }
 
-# --- Lab 7 coating factors ---
-LAB7_COATING_FACTORS = {
-    "TiN":     {"wear": 1.00, "temp": 1.00, "strength": 1.00},
-    "TiAlN":   {"wear": 0.92, "temp": 0.88, "strength": 1.08},
-    "TiZrN":   {"wear": 0.89, "temp": 0.91, "strength": 1.10},
-    "TiSiN":   {"wear": 0.85, "temp": 0.86, "strength": 1.12},
-    "TiAlSiN": {"wear": 0.80, "temp": 0.82, "strength": 1.18},
-    "TiZrCrN": {"wear": 0.78, "temp": 0.79, "strength": 1.22},
+# --- Lab 7 tool life models ---
+LAB7_TOOL_LIFE_MODELS = {
+    "МК8": {
+        "TiN": {
+            "30ХГСА": {"k": 4.865e10, "v_exp": 4.5, "s_exp": 1.28},
+            "12Х18Н10Т": {"k": 4.568e8, "v_exp": 3.79, "s_exp": 1.2},
+        },
+        "TiSiN": {
+            "30ХГСА": {"k": 1.135e8, "v_exp": 3.16, "s_exp": 1.17},
+            "12Х18Н10Т": {"k": 8.505e7, "v_exp": 3.28, "s_exp": 1.11},
+        },
+        "TiZrN": {
+            "30ХГСА": {"k": 2.878e8, "v_exp": 3.39, "s_exp": 1.23},
+            "12Х18Н10Т": {"k": 1.529e8, "v_exp": 3.45, "s_exp": 1.18},
+        },
+        "TiAlN": {
+            "30ХГСА": {"k": 7.829e8, "v_exp": 3.58, "s_exp": 1.22},
+            "12Х18Н10Т": {"k": 6.06e7, "v_exp": 3.25, "s_exp": 1.14},
+        },
+        "TiSiAlN": {
+            "30ХГСА": {"k": 1.95e8, "v_exp": 3.13, "s_exp": 1.14},
+            "12Х18Н10Т": {"k": 1.297e7, "v_exp": 2.79, "s_exp": 1.09},
+        },
+        "TiZrAlN": {
+            "30ХГСА": {"k": 1.317e8, "v_exp": 3.1, "s_exp": 1.2},
+            "12Х18Н10Т": {"k": 4.088e7, "v_exp": 3.02, "s_exp": 1.1},
+        },
+        "TiAlSiN": {
+            "30ХГСА": {"k": 1.525e8, "v_exp": 3.12, "s_exp": 1.2},
+            "12Х18Н10Т": {"k": 1.345e7, "v_exp": 2.81, "s_exp": 1.09},
+        },
+    },
+    "Р6М5К5": {
+        "TiN": {
+            "30ХГСА": {"k": 6.945e7, "v_exp": 4.32, "s_exp": 1.79},
+            "12Х18Н10Т": {"k": 1.197e4, "v_exp": 2.47, "s_exp": 1.09},
+        },
+        "TiSiN": {
+            "30ХГСА": {"k": 3.036e6, "v_exp": 3.36, "s_exp": 1.66},
+            "12Х18Н10Т": {"k": 5.434e3, "v_exp": 2.04, "s_exp": 1.02},
+        },
+        "TiZrN": {
+            "30ХГСА": {"k": 1.351e7, "v_exp": 3.74, "s_exp": 1.7},
+            "12Х18Н10Т": {"k": 7.456e3, "v_exp": 2.11, "s_exp": 1.0},
+        },
+        "TiAlN": {
+            "30ХГСА": {"k": 5.668e6, "v_exp": 3.47, "s_exp": 1.62},
+            "12Х18Н10Т": {"k": 5.018e3, "v_exp": 2.04, "s_exp": 1.04},
+        },
+        "TiSiAlN": {
+            "30ХГСА": {"k": 2.195e6, "v_exp": 3.04, "s_exp": 1.49},
+            "12Х18Н10Т": {"k": 7.32e3, "v_exp": 1.93, "s_exp": 0.96},
+        },
+        "TiZrAlN": {
+            "30ХГСА": {"k": 1.991e6, "v_exp": 3.04, "s_exp": 1.44},
+            "12Х18Н10Т": {"k": 6.253e3, "v_exp": 1.88, "s_exp": 1.0},
+        },
+        "TiAlSiN": {
+            "30ХГСА": {"k": 2.479e6, "v_exp": 3.04, "s_exp": 1.44},
+            "12Х18Н10Т": {"k": 5.497e3, "v_exp": 1.81, "s_exp": 0.98},
+        },
+    },
 }
 
-def _build_lab7_graph_data(coating: str, feed: float, tool_life: float) -> dict:
-    # speed values from 160 to 220 step 5
-    speed_values = list(range(160, 221, 5))
-    factors = LAB7_COATING_FACTORS.get(coating, {"wear": 1.0, "temp": 1.0, "strength": 1.0})
-    k_values = []
-    i_values = []
-    r_values = []
-    tcoef_values = []
+LAB7_PARAMETER_RANGES = {
+    ("МК8", "30ХГСА"): {"speed": (160, 220), "feed": (0.11, 0.3)},
+    ("МК8", "12Х18Н10Т"): {"speed": (130, 180), "feed": (0.11, 0.3)},
+    ("Р6М5К5", "30ХГСА"): {"speed": (50, 70), "feed": (0.15, 0.3)},
+    ("Р6М5К5", "12Х18Н10Т"): {"speed": (15, 30), "feed": (0.15, 0.3)},
+}
 
-    for V in speed_values:
-        S = feed
-        T = tool_life
-        I = (V * S * factors["wear"]) / T if T != 0 else 0
-        K = (factors["strength"] * T) / (V * S) if (V * S) != 0 else 0
-        R = (T * factors["strength"]) / factors["wear"] if factors["wear"] != 0 else 0
-        Tcoef = (V * factors["temp"]) / 100
 
-        k_values.append(round(K, 6))
-        i_values.append(round(I, 6))
-        r_values.append(round(R, 6))
-        tcoef_values.append(round(Tcoef, 6))
+def _lab7_tool_life(cutting_speed: float, feed: float, model: dict) -> float:
+    return model["k"] / ((cutting_speed ** model["v_exp"]) * (feed ** model["s_exp"]))
+
+
+def _build_lab7_graph_data(
+    coating: str,
+    tool_material: str,
+    processed_material: str,
+    cutting_speed: float,
+    feed: float,
+    points_count: int = 41,
+) -> dict:
+    model = LAB7_TOOL_LIFE_MODELS[tool_material][coating][processed_material]
+    ranges = LAB7_PARAMETER_RANGES[(tool_material, processed_material)]
+    min_speed, max_speed = ranges["speed"]
+    min_feed, max_feed = ranges["feed"]
+
+    speed_step = (max_speed - min_speed) / (points_count - 1)
+    feed_step = (max_feed - min_feed) / (points_count - 1)
+    speed_values = [round(min_speed + index * speed_step, 4) for index in range(points_count)]
+    feed_values = [round(min_feed + index * feed_step, 4) for index in range(points_count)]
+    t_by_speed_values = [round(_lab7_tool_life(speed, feed, model), 4) for speed in speed_values]
+    t_by_feed_values = [round(_lab7_tool_life(cutting_speed, feed_value, model), 4) for feed_value in feed_values]
 
     return {
         'speed_values': speed_values,
-        'k_values': k_values,
-        'i_values': i_values,
-        'r_values': r_values,
-        'tcoef_values': tcoef_values,
+        't_by_speed_values': t_by_speed_values,
+        'feed_values': feed_values,
+        't_by_feed_values': t_by_feed_values,
+        'charts': [
+            {
+                'x_label': 'V, м/мин',
+                'x_values': speed_values,
+                'numeric_x': True,
+                'series': [{'label': 'T(V), мин', 'values': t_by_speed_values}],
+            },
+            {
+                'x_label': 'S, мм/об',
+                'x_values': feed_values,
+                'numeric_x': True,
+                'series': [{'label': 'T(S), мин', 'values': t_by_feed_values}],
+            },
+        ],
     }
 
 def _build_lab6_mode1_graph_data(coating: str, tool_material: str, alloying_element: str, content_range: tuple, points_count: int = 41) -> dict:
@@ -1848,18 +2292,18 @@ LABS_DATA = [
         'id': 7,
         'title': 'Работоспособность режущего инструмента',
         'algorithm': [
-            'выбирается покрытие',
-            'выбирается инструментальный материал',
-            'выбирается обрабатываемый материал (30ХГСА)',
-            'задаются скорость резания V (м/мин), подача S (мм/об), период стойкости T (мин)',
-            'рассчитываются I, K, R, Tcoef по формулам и строятся графики зависимостей от V'
+            'выбирается износостойкое покрытие',
+            'выбирается инструментальный материал: МК8 или Р6М5К5',
+            'выбирается обрабатываемый материал: 30ХГСА или 12Х18Н10Т',
+            'задаются скорость резания V (м/мин) и подача S (мм/об) в допустимых диапазонах',
+            'рассчитывается период стойкости T по формуле из таблицы и строятся графики T(V) и T(S)',
         ],
         'form_fields': [
             {
                 'name': 'coating',
                 'label': 'покрытие',
                 'type': 'select',
-                'options': ['TiN', 'TiAlN', 'TiZrN', 'TiSiN', 'TiAlSiN', 'TiZrCrN'],
+                'options': ['TiN', 'TiSiN', 'TiZrN', 'TiAlN', 'TiSiAlN', 'TiZrAlN', 'TiAlSiN'],
             },
             {
                 'name': 'tool_material',
@@ -1871,33 +2315,28 @@ LABS_DATA = [
                 'name': 'processed_material',
                 'label': 'обрабатываемый материал',
                 'type': 'select',
-                'options': ['30ХГСА'],
+                'options': ['30ХГСА', '12Х18Н10Т'],
             },
             {
                 'name': 'cutting_speed',
                 'label': 'скорость резания V, м/мин',
                 'type': 'text',
-                'placeholder': '160-220',
+                'placeholder': 'Введите значение',
             },
             {
                 'name': 'feed',
                 'label': 'подача S, мм/об',
                 'type': 'text',
-                'placeholder': '0.1-0.3',
-            },
-            {
-                'name': 'tool_life',
-                'label': 'период стойкости T, мин',
-                'type': 'text',
-                'placeholder': '10-90',
+                'placeholder': 'Введите значение',
             },
         ],
         'notes': [
-            'Диапазон скоростей V: 160–220 м/мин',
-            'Подача S: 0.1–0.3 мм/об',
-            'Период стойкости T: 10–90 мин',
+            'Для МК8 и 30ХГСА: V = 160–220 м/мин, S = 0.11–0.3 мм/об',
+            'Для МК8 и 12Х18Н10Т: V = 130–180 м/мин, S = 0.11–0.3 мм/об',
+            'Для Р6М5К5 и 30ХГСА: V = 50–70 м/мин, S = 0.15–0.3 мм/об',
+            'Для Р6М5К5 и 12Х18Н10Т: V = 15–30 м/мин, S = 0.15–0.3 мм/об',
         ],
-        'result_fields': ['K', 'I', 'R', 'Tcoef'],
+        'result_fields': ['T, мин'],
     },
 ]
 
@@ -2610,15 +3049,13 @@ def lab_page(request, lab_id: int):
         processed = form_values.get('processed_material', '')
         cutting_speed_raw = form_values.get('cutting_speed', '')
         feed_raw = form_values.get('feed', '')
-        tool_life_raw = form_values.get('tool_life', '')
 
-        # Basic validations
-        if not coating or coating not in ('TiN', 'TiAlN', 'TiZrN', 'TiSiN', 'TiAlSiN', 'TiZrCrN'):
-            error_message = 'Выберите покрытие.'
-        elif not tool_material or tool_material not in ('МК8', 'Р6М5К5'):
+        if not tool_material or tool_material not in ('МК8', 'Р6М5К5'):
             error_message = 'Выберите инструментальный материал.'
-        elif processed != '30ХГСА':
-            error_message = 'Выберите обрабатываемый материал 30ХГСА.'
+        elif not coating or coating not in LAB7_TOOL_LIFE_MODELS.get(tool_material, {}):
+            error_message = 'Выберите покрытие.'
+        elif processed not in ('30ХГСА', '12Х18Н10Т'):
+            error_message = 'Выберите обрабатываемый материал.'
 
         try:
             V = float(cutting_speed_raw.replace(',', '.'))
@@ -2628,38 +3065,43 @@ def lab_page(request, lab_id: int):
             S = float(feed_raw.replace(',', '.'))
         except Exception:
             S = None
-        try:
-            T = float(tool_life_raw.replace(',', '.'))
-        except Exception:
-            T = None
 
         if error_message is None:
-            if V is None or not (160 <= V <= 220):
-                error_message = 'Скорость резания должна быть в диапазоне 160–220.'
-            elif S is None or not (0.1 <= S <= 0.3):
-                error_message = 'Подача должна быть в диапазоне 0.1–0.3.'
-            elif T is None or not (10 <= T <= 90):
-                error_message = 'Период стойкости должен быть в диапазоне 10–90.'
+            ranges = LAB7_PARAMETER_RANGES.get((tool_material, processed))
+            model = LAB7_TOOL_LIFE_MODELS.get(tool_material, {}).get(coating, {}).get(processed)
+            if ranges is None or model is None:
+                error_message = 'Для выбранной комбинации отсутствуют данные расчета.'
 
         if error_message is None:
-            factors = LAB7_COATING_FACTORS.get(coating, {"wear": 1.0, "temp": 1.0, "strength": 1.0})
-            I = (V * S * factors["wear"]) / T if T != 0 else 0
-            K = (factors["strength"] * T) / (V * S) if (V * S) != 0 else 0
-            R = (T * factors["strength"]) / factors["wear"] if factors["wear"] != 0 else 0
-            Tcoef = (V * factors["temp"]) / 100
+            min_speed, max_speed = ranges["speed"]
+            min_feed, max_feed = ranges["feed"]
+            if V is None or not (min_speed <= V <= max_speed):
+                error_message = f'Скорость резания должна быть в диапазоне {min_speed:g}–{max_speed:g}.'
+            elif S is None or not (min_feed <= S <= max_feed):
+                error_message = f'Подача должна быть в диапазоне {min_feed:g}–{max_feed:g}.'
+
+        if error_message is None:
+            T = _lab7_tool_life(V, S, model)
 
             calculated_results = {
                 '_mode': 'lab7',
-                'K': f'{round(K, 3)}',
-                'I': f'{round(I, 3)}',
-                'R': f'{round(R, 3)}',
-                'Tcoef': f'{round(Tcoef, 3)}',
+                'T, мин': f'{T:.3f}',
             }
 
-            graph_data = _build_lab7_graph_data(coating=coating, feed=S, tool_life=T)
+            graph_data = _build_lab7_graph_data(
+                coating=coating,
+                tool_material=tool_material,
+                processed_material=processed,
+                cutting_speed=V,
+                feed=S,
+            )
 
     result_items = _build_result_items(lab, calculated_results)
     form_fields = _build_form_fields_with_values(lab, form_values)
+
+    export_format = request.POST.get('export_format') if request.method == 'POST' else None
+    if export_format and error_message is None and result_items:
+        return _build_lab_export_response(export_format, lab, form_fields, result_items, graph_data)
 
     return render(
         request,
