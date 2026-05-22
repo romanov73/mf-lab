@@ -286,7 +286,46 @@
       {% endif %}
 
     {% elif graph_data and lab.id == 5 %}
-      {% if graph_data.mode == 'mode2' %}
+      {% if graph_data.mode == 'mode1' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Qп(C)</p>
+            <canvas id="chart-lab5-mode1-qp"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Qз(C)</p>
+            <canvas id="chart-lab5-mode1-qz"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">qп(C)</p>
+            <canvas id="chart-lab5-mode1-qpi"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">qз(C)</p>
+            <canvas id="chart-lab5-mode1-qzi"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Тп.ср.(C)</p>
+            <canvas id="chart-lab5-mode1-tp"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Тз.ср.(C)</p>
+            <canvas id="chart-lab5-mode1-tz"></canvas>
+          </div>
+        </div>
+      </div>
+      {% elif graph_data.mode == 'mode2' %}
       <div class="row g-3">
         <div class="col-12 col-lg-4">
           <div class="p-2 border rounded bg-light">
@@ -347,6 +386,96 @@
         </div>
       </div>
       {% endif %}
+    {% elif graph_data and lab.id == 6 %}
+      {% if graph_data.mode == 'mode1' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">qN(C)</p>
+            <canvas id="chart-lab6-mode1-qn"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">qF(C)</p>
+            <canvas id="chart-lab6-mode1-qf"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σN(C)</p>
+            <canvas id="chart-lab6-mode1-sigmaN"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">τF(C)</p>
+            <canvas id="chart-lab6-mode1-tauF"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σmax(C)</p>
+            <canvas id="chart-lab6-mode1-sigmaMax"></canvas>
+          </div>
+        </div>
+      </div>
+      {% elif graph_data.mode == 'mode2' %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σ1 (по составу покрытий)</p>
+            <canvas id="chart-lab6-comp-sigma1"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σ_ост (по составу покрытий)</p>
+            <canvas id="chart-lab6-comp-sigma_ost"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σ_t (по составу покрытий)</p>
+            <canvas id="chart-lab6-comp-sigma_t"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">σ_sum (по составу покрытий)</p>
+            <canvas id="chart-lab6-comp-sigma_sum"></canvas>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    {% elif graph_data and lab.id == 7 %}
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">K(V)</p>
+            <canvas id="chart-lab7-k"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">I(V)</p>
+            <canvas id="chart-lab7-i"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">R(V)</p>
+            <canvas id="chart-lab7-r"></canvas>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="p-2 border rounded bg-light">
+            <p class="mb-2 text-muted">Tcoef(V)</p>
+            <canvas id="chart-lab7-tcoef"></canvas>
+          </div>
+        </div>
+      </div>
 
     {% else %}
     <div class="p-3 border rounded bg-light text-muted">
@@ -450,6 +579,57 @@
       toggleField(fieldRows.alloying_element, isMode1);
       toggleField(fieldRows.alloying_content, isMode1);
       toggleField(fieldRows.composition_coating, isMode2);
+    }
+
+    modeSelect.addEventListener("change", refreshModeView);
+    refreshModeView();
+  })();
+</script>
+{% endif %}
+
+{% if lab.id == 6 and lab.research_modes %}
+{{ lab.research_modes|json_script:"lab6-research-modes" }}
+<script>
+  (function () {
+    const modeSelect = document.getElementById("id_research_mode");
+    const coatingSelect = document.getElementById("id_coating") || document.getElementById("id_stress_coating");
+    const alloyingElementRow = document.querySelector('[data-field-name="alloying_element"]');
+    const alloyingContentRow = document.querySelector('[data-field-name="alloying_content"]');
+
+    if (!modeSelect) return;
+
+    const modeNames = JSON.parse(document.getElementById("lab6-research-modes").textContent);
+    const mode1Coatings = ["TiAlMe2N", "TiZrMe2N", "TiSiMe2N"];
+    const mode2Coatings = ["TiN", "TiAlN", "TiAlSiN", "TiZrN", "TiZrCrN", "TiSiN", "TiSiAlN"];
+
+    function refreshSelectOptions(selectNode, options) {
+      if (!selectNode) return;
+
+      const previousValue = selectNode.value;
+      selectNode.innerHTML = "";
+
+      options.forEach(function (optionValue) {
+        const option = document.createElement("option");
+        option.value = optionValue;
+        option.textContent = optionValue;
+        selectNode.appendChild(option);
+      });
+
+      selectNode.value = options.indexOf(previousValue) !== -1 ? previousValue : options[0];
+    }
+
+    function toggleField(fieldNode, isVisible) {
+      if (fieldNode) fieldNode.style.display = isVisible ? "block" : "none";
+    }
+
+    function refreshModeView() {
+      const isMode1 = modeSelect.value === modeNames.mode1;
+
+      refreshSelectOptions(coatingSelect, isMode1 ? mode1Coatings : mode2Coatings);
+      toggleField(document.querySelector('[data-field-name="coating"]'), isMode1);
+      toggleField(document.querySelector('[data-field-name="stress_coating"]'), !isMode1);
+      toggleField(alloyingElementRow, isMode1);
+      toggleField(alloyingContentRow, isMode1);
     }
 
     modeSelect.addEventListener("change", refreshModeView);
@@ -717,7 +897,7 @@
       const paddingLeft = 58;
       const paddingRight = 18;
       const paddingTop = 22;
-      const paddingBottom = 72;
+      const paddingBottom = 92;
       const plotWidth = width - paddingLeft - paddingRight;
       const plotHeight = height - paddingTop - paddingBottom;
 
@@ -751,6 +931,7 @@
       ctx.stroke();
 
       ctx.strokeStyle = "#9aa1a8";
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(paddingLeft, baselineY);
       ctx.lineTo(paddingLeft + plotWidth, baselineY);
@@ -767,10 +948,10 @@
         ctx.fillRect(x, y, barWidth, barHeight);
 
         ctx.fillStyle = "#6c757d";
-        ctx.font = "10px sans-serif";
+        ctx.font = "9px sans-serif";
         ctx.save();
-        ctx.translate(x + barWidth / 2, paddingTop + plotHeight + 18);
-        ctx.rotate((-35 * Math.PI) / 180);
+        ctx.translate(x + barWidth / 2, paddingTop + plotHeight + 12);
+        ctx.rotate((-45 * Math.PI) / 180);
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
         ctx.fillText(String(labels[i]), 0, 0);
@@ -779,9 +960,12 @@
 
       ctx.fillStyle = "#6c757d";
       ctx.font = "10px sans-serif";
-      ctx.fillText(String(maxY).replace(".", ","), 4, paddingTop + 4);
-      ctx.fillText("0", 20, baselineY - 3);
-      ctx.fillText(String(minY).replace(".", ","), 4, paddingTop + plotHeight + 4);
+      ctx.textAlign = "right";
+      ctx.fillText(String(maxY).replace(".", ","), paddingLeft - 8, paddingTop + 6);
+      if (minY < 0) {
+        ctx.fillText(String(minY).replace(".", ","), paddingLeft - 8, paddingTop + plotHeight + 4);
+      }
+      ctx.fillText("0", paddingLeft - 4, baselineY + 4);
     }
 
     if (document.getElementById("chart-a")) {
@@ -827,6 +1011,38 @@
       drawBarChart("chart-lab4-comp-qf", graphData.coatings, graphData.qf_values, "#0dcaf0");
       drawBarChart("chart-lab4-comp-sigma-n", graphData.coatings, graphData.sigma_n_values, "#198754");
       drawBarChart("chart-lab4-comp-tau-f", graphData.coatings, graphData.tau_f_values, "#dc3545");
+    }
+
+    if (document.getElementById("chart-lab5-mode1-qp")) {
+      drawLineChart("chart-lab5-mode1-qp", graphData.c_values, graphData.qp_values, "#0d6efd");
+      drawLineChart("chart-lab5-mode1-qz", graphData.c_values, graphData.qz_values, "#198754");
+      drawLineChart("chart-lab5-mode1-qpi", graphData.c_values, graphData.qpi_values, "#dc3545");
+      drawLineChart("chart-lab5-mode1-qzi", graphData.c_values, graphData.qzi_values, "#fd7e14");
+      drawLineChart("chart-lab5-mode1-tp", graphData.c_values, graphData.tp_avg_values, "#6f42c1");
+      drawLineChart("chart-lab5-mode1-tz", graphData.c_values, graphData.tz_avg_values, "#20c997");
+    }
+
+    if (document.getElementById("chart-lab6-mode1-qn")) {
+      drawLineChart("chart-lab6-mode1-qn", graphData.c_values, graphData.qn_values, "#0d6efd");
+      drawLineChart("chart-lab6-mode1-qf", graphData.c_values, graphData.qf_values, "#198754");
+      drawLineChart("chart-lab6-mode1-sigmaN", graphData.c_values, graphData.sigma_n_values, "#dc3545");
+      drawLineChart("chart-lab6-mode1-tauF", graphData.c_values, graphData.tau_f_values, "#fd7e14");
+      drawLineChart("chart-lab6-mode1-sigmaMax", graphData.c_values, graphData.sigma_max_values, "#6f42c1");
+    }
+
+    if (document.getElementById("chart-lab6-comp-sigma1")) {
+      const labels6 = graphData.labels || [];
+      drawBarChart("chart-lab6-comp-sigma1", labels6, graphData.sigma1_values || [], "#0d6efd");
+      drawBarChart("chart-lab6-comp-sigma_ost", labels6, graphData.sigma_ost_values || [], "#198754");
+      drawBarChart("chart-lab6-comp-sigma_t", labels6, graphData.sigma_t_values || [], "#dc3545");
+      drawBarChart("chart-lab6-comp-sigma_sum", labels6, graphData.sigma_sum_values || [], "#fd7e14");
+    }
+
+    if (document.getElementById("chart-lab7-k")) {
+      drawLineChart("chart-lab7-k", graphData.speed_values, graphData.k_values, "#0d6efd");
+      drawLineChart("chart-lab7-i", graphData.speed_values, graphData.i_values, "#dc3545");
+      drawLineChart("chart-lab7-r", graphData.speed_values, graphData.r_values, "#198754");
+      drawLineChart("chart-lab7-tcoef", graphData.speed_values, graphData.tcoef_values, "#6f42c1");
     }
 
     if (document.getElementById("chart-lab5-qp")) {
