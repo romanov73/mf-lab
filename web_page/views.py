@@ -267,7 +267,8 @@ def _graph_charts_from_data(graph_data: dict | None) -> list[tuple[str, list, li
 def _build_lab_export_pdf(lab: dict, form_fields: list[dict], result_items: list[dict], graph_data: dict | None) -> bytes:
     from reportlab.graphics.charts.barcharts import VerticalBarChart
     from reportlab.graphics.charts.lineplots import LinePlot
-    from reportlab.graphics.shapes import Drawing
+    from reportlab.graphics.shapes import Drawing, Rect
+    from reportlab.graphics.widgets.markers import makeMarker
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
@@ -363,29 +364,58 @@ def _build_lab_export_pdf(lab: dict, form_fields: list[dict], result_items: list
         for x_key, x_values, series, is_numeric_x in charts:
             for index, (series_name, values) in enumerate(series):
                 drawing = Drawing(460, 235)
+                drawing.add(Rect(0, 0, 460, 235, fillColor=colors.white, strokeColor=colors.HexColor('#dee2e6')))
 
                 if is_numeric_x:
+                    numeric_values = [float(item) for item in values]
+                    min_y = min(numeric_values)
+                    max_y = max(numeric_values)
+                    y_padding = (max_y - min_y) * 0.08 if max_y != min_y else max(abs(max_y) * 0.08, 1)
+
                     chart = LinePlot()
                     chart.x = 45
                     chart.y = 35
                     chart.width = 380
                     chart.height = 160
-                    chart.data = [list(zip(x_values, [float(item) for item in values]))]
-                    chart.lines[0].strokeWidth = 1.8
+                    chart.data = [list(zip(x_values, numeric_values))]
+                    chart.joinedLines = 1
+                    chart.lines[0].strokeWidth = 2
                     chart.lines[0].strokeColor = palette[index % len(palette)]
+                    chart.lines[0].symbol = makeMarker('Circle')
+                    chart.lines[0].symbol.size = 4
+                    chart.lines[0].symbol.fillColor = colors.white
+                    chart.lines[0].symbol.strokeColor = palette[index % len(palette)]
                     chart.xValueAxis.valueMin = min(x_values)
                     chart.xValueAxis.valueMax = max(x_values)
+                    chart.yValueAxis.valueMin = min_y - y_padding
+                    chart.yValueAxis.valueMax = max_y + y_padding
+                    chart.xValueAxis.visibleGrid = 1
+                    chart.yValueAxis.visibleGrid = 1
+                    chart.xValueAxis.gridStrokeColor = colors.HexColor('#e9ecef')
+                    chart.yValueAxis.gridStrokeColor = colors.HexColor('#e9ecef')
+                    chart.xValueAxis.labels.fontName = base_font
+                    chart.yValueAxis.labels.fontName = base_font
+                    chart.xValueAxis.labels.fontSize = 7
+                    chart.yValueAxis.labels.fontSize = 7
                     drawing.add(chart)
                 else:
+                    numeric_values = [float(item) for item in values]
                     chart = VerticalBarChart()
                     chart.x = 45
                     chart.y = 35
                     chart.width = 380
                     chart.height = 160
-                    chart.data = [[float(item) for item in values]]
+                    chart.data = [numeric_values]
                     chart.categoryAxis.categoryNames = [str(value) for value in x_values]
                     chart.barWidth = 10
                     chart.bars[0].fillColor = palette[index % len(palette)]
+                    chart.valueAxis.visibleGrid = 1
+                    chart.valueAxis.gridStrokeColor = colors.HexColor('#e9ecef')
+                    chart.categoryAxis.labels.fontName = base_font
+                    chart.valueAxis.labels.fontName = base_font
+                    chart.categoryAxis.labels.fontSize = 7
+                    chart.valueAxis.labels.fontSize = 7
+                    chart.categoryAxis.labels.angle = 30
                     drawing.add(chart)
 
                 elements.append(Paragraph(series_name, body_style))
@@ -399,6 +429,7 @@ def _build_lab_export_pdf(lab: dict, form_fields: list[dict], result_items: list
 def _build_lab_export_xlsx(lab: dict, form_fields: list[dict], result_items: list[dict], graph_data: dict | None) -> bytes:
     from openpyxl import Workbook
     from openpyxl.chart import BarChart, Reference, ScatterChart, Series
+    from openpyxl.chart.axis import ChartLines
     from openpyxl.styles import Font, PatternFill
 
     workbook = Workbook()
@@ -459,9 +490,13 @@ def _build_lab_export_xlsx(lab: dict, form_fields: list[dict], result_items: lis
             for index, (series_name, _) in enumerate(series, start=2):
                 if is_numeric_x:
                     chart = ScatterChart()
+                    chart.scatterStyle = 'lineMarker'
                     x_values_ref = Reference(graph_sheet, min_col=1, min_row=data_start_row, max_row=data_end_row)
                     y_values_ref = Reference(graph_sheet, min_col=index, min_row=data_start_row, max_row=data_end_row)
                     chart.series.append(Series(y_values_ref, x_values_ref, title=series_name))
+                    chart.series[-1].marker.symbol = 'circle'
+                    chart.series[-1].marker.size = 5
+                    chart.series[-1].graphicalProperties.line.width = 25000
                 else:
                     chart = BarChart()
                     data = Reference(graph_sheet, min_col=index, max_col=index, min_row=header_row, max_row=data_end_row)
@@ -473,6 +508,9 @@ def _build_lab_export_xlsx(lab: dict, form_fields: list[dict], result_items: lis
                 chart.x_axis.title = x_key
                 chart.height = 8
                 chart.width = 14
+                chart.x_axis.majorGridlines = ChartLines()
+                chart.y_axis.majorGridlines = ChartLines()
+                chart.legend = None
 
                 chart_column = 'H' if chart_position % 2 == 0 else 'P'
                 chart_row = 2 + (chart_position // 2) * 16
