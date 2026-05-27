@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="d-flex mb-3 justify-content-between">
-  <span class="d-inline-block fw-bold h5">Лабораторная работа №{{ lab.id }}: {{ lab.title }}</span>
-  <a href="{% url 'labs_list' %}" class="btn btn-outline-primary btn-sm">К списку лабораторных</a>
+<div class="d-flex mb-3 justify-content-between align-items-start gap-3">
+  <span class="d-inline-block fw-bold h5 mb-0">Лабораторная работа №{{ lab.id }}: {{ lab.title }}</span>
+  <a href="{% url 'labs_list' %}" class="btn btn-outline-primary btn-sm flex-shrink-0 text-nowrap">К списку лабораторных</a>
 </div>
 
 {% if error_message %}
@@ -62,6 +62,18 @@
 
           {% if field.name == 'alloying_content' %}
           <div id="alloying-content-range" class="form-text text-muted">
+            Допустимый диапазон: -
+          </div>
+          {% endif %}
+
+          {% if lab.id == 7 and field.name == 'cutting_speed' %}
+          <div id="lab7-speed-range" class="form-text text-muted">
+            Допустимый диапазон: -
+          </div>
+          {% endif %}
+
+          {% if lab.id == 7 and field.name == 'feed' %}
+          <div id="lab7-feed-range" class="form-text text-muted">
             Допустимый диапазон: -
           </div>
           {% endif %}
@@ -635,6 +647,56 @@
 
     modeSelect.addEventListener("change", refreshModeView);
     refreshModeView();
+  })();
+</script>
+{% endif %}
+
+{% if lab.id == 7 and lab.parameter_ranges %}
+{{ lab.parameter_ranges|json_script:"lab7-parameter-ranges" }}
+<script>
+  (function () {
+    const toolSelect = document.getElementById("id_tool_material");
+    const processedSelect = document.getElementById("id_processed_material");
+    const speedInput = document.getElementById("id_cutting_speed");
+    const feedInput = document.getElementById("id_feed");
+    const speedHint = document.getElementById("lab7-speed-range");
+    const feedHint = document.getElementById("lab7-feed-range");
+
+    if (!toolSelect || !processedSelect || !speedInput || !feedInput || !speedHint || !feedHint) return;
+
+    const parameterRanges = JSON.parse(document.getElementById("lab7-parameter-ranges").textContent);
+
+    function formatNumber(value) {
+      return String(value).replace(".", ",");
+    }
+
+    function formatRange(rangeValues) {
+      return formatNumber(rangeValues[0]) + "-" + formatNumber(rangeValues[1]);
+    }
+
+    function refreshRanges() {
+      const ranges = (parameterRanges[toolSelect.value] || {})[processedSelect.value] || null;
+
+      if (!ranges) {
+        speedHint.textContent = "Допустимый диапазон: -";
+        feedHint.textContent = "Допустимый диапазон: -";
+        speedInput.placeholder = "Введите значение";
+        feedInput.placeholder = "Введите значение";
+        return;
+      }
+
+      const speedRange = formatRange(ranges.speed);
+      const feedRange = formatRange(ranges.feed);
+
+      speedHint.textContent = "Допустимый диапазон: " + speedRange + " м/мин";
+      feedHint.textContent = "Допустимый диапазон: " + feedRange + " мм/об";
+      speedInput.placeholder = speedRange;
+      feedInput.placeholder = feedRange;
+    }
+
+    toolSelect.addEventListener("change", refreshRanges);
+    processedSelect.addEventListener("change", refreshRanges);
+    refreshRanges();
   })();
 </script>
 {% endif %}

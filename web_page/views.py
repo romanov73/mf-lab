@@ -1682,6 +1682,13 @@ LAB7_PARAMETER_RANGES = {
 }
 
 
+def _build_lab7_parameter_ranges_for_template() -> dict:
+    ranges_by_tool = {}
+    for (tool_material, processed_material), ranges in LAB7_PARAMETER_RANGES.items():
+        ranges_by_tool.setdefault(tool_material, {})[processed_material] = ranges
+    return ranges_by_tool
+
+
 def _lab7_tool_life(cutting_speed: float, feed: float, model: dict) -> float:
     return model["k"] / ((cutting_speed ** model["v_exp"]) * (feed ** model["s_exp"]))
 
@@ -2129,7 +2136,7 @@ LABS_DATA = [
             'выбирается режим исследования: влияние содержания легирующего элемента, влияние состава покрытия на показатели теплового состояния или влияние состава покрытия на тепловой баланс',
             'для режима влияния содержания выбираются покрытие, инструментальный материал, обрабатываемый материал, легирующий элемент и его содержание C',
             'для режима влияния состава покрытия выбирается тип операции и покрытие',
-            'определяются тепловые характеристики согласно таблицам ТЗ',
+            'определяются тепловые характеристики по табличным данным',
             'строятся линейные графики или столбчатые диаграммы в зависимости от режима',
         ],
         'form_fields': [
@@ -2245,7 +2252,7 @@ LABS_DATA = [
         'algorithm': [
             'выбирается режим исследования: влияние содержания легирующего элемента или влияние состава покрытия',
             'для режима влияния содержания выбираются: покрытие (TiAlMe2N, TiZrMe2N, TiSiMe2N), инструментальный материал (МК8, Р6М5К5), обрабатываемый материал (30ХГСА), легирующий элемент и его содержание C',
-            'определяются qN, qF, σN, τF, σmax по регрессионным моделям из ТЗ',
+            'определяются qN, qF, σN, τF, σmax по регрессионным моделям',
             'строятся линейные графики зависимостей параметров от содержания легирующего элемента или столбчатые диаграммы по составам покрытий',
         ],
         'form_fields': [
@@ -2374,6 +2381,7 @@ LABS_DATA = [
             'Для Р6М5К5 и 30ХГСА: V = 50–70 м/мин, S = 0.15–0.3 мм/об',
             'Для Р6М5К5 и 12Х18Н10Т: V = 15–30 м/мин, S = 0.15–0.3 мм/об',
         ],
+        'parameter_ranges': _build_lab7_parameter_ranges_for_template(),
         'result_fields': ['T, мин'],
     },
 ]
@@ -2888,7 +2896,7 @@ def lab_page(request, lab_id: int):
                         content_range=lab['content_ranges'][coating][alloying_element],
                     )
                 except KeyError:
-                    error_message = 'Для выбранной комбинации нет полного набора коэффициентов в ТЗ'
+                    error_message = 'Для выбранной комбинации нет полного набора коэффициентов.'
 
         if error_message is None and selected_mode == mode2_name:
             operation_type = form_values.get('operation_type', '')
