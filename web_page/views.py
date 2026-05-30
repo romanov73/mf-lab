@@ -133,6 +133,17 @@ def _cubic_model(c_value: float, coeffs: dict | list | tuple) -> float:
     )
 
 
+def _format_lab_number(value, decimal_places: int = 7):
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, (int, float)):
+        formatted = f'{value:.{decimal_places}f}'.rstrip('0').rstrip('.')
+        return '0' if formatted in ('', '-0') else formatted
+
+    return value
+
+
 def _build_result_items(lab: dict, calculated_results: dict | None = None) -> list:
     calculated_results = calculated_results or {}
     result_fields = lab.get('result_fields', [])
@@ -143,7 +154,7 @@ def _build_result_items(lab: dict, calculated_results: dict | None = None) -> li
     return [
         {
             'label': label,
-            'value': calculated_results.get(label, '-'),
+            'value': _format_lab_number(calculated_results.get(label, '-')),
         }
         for label in result_fields
         if not str(label).startswith('_')
@@ -2559,9 +2570,9 @@ def lab_page(request, lab_id: int):
                 sigma_value = _quadratic_model(content_value, LAB1_SIGMA_COEFFS[coating][tool_material][alloying_element])
 
                 calculated_results = {
-                    'a, нм': f'{a_value:.6f}',
-                    'β111, град': f'{beta_value:.6f}',
-                    'σ0, МПа': f'{sigma_value:.3f}',
+                    'a, нм': a_value,
+                    'β111, град': beta_value,
+                    'σ0, МПа': sigma_value,
                 }
 
                 graph_data = _build_lab1_graph_data(
@@ -2629,10 +2640,10 @@ def lab_page(request, lab_id: int):
                     k0_value = _cubic_model(content_value, LAB2_K0_COEFFS[coating][tool_material][alloying_element])
 
                     calculated_results = {
-                        'микротвердость Hµ, ГПа': f'{hmu_value:.3f}',
-                        'модуль упругости E, ГПа': f'{e_value:.3f}',
-                        'трещиностойкость KICП, МПа·м^1/2': f'{kicp_value:.3f}',
-                        'коэффициент отслоения K0': f'{k0_value:.3f}',
+                        'микротвердость Hµ, ГПа': hmu_value,
+                        'модуль упругости E, ГПа': e_value,
+                        'трещиностойкость KICП, МПа·м^1/2': kicp_value,
+                        'коэффициент отслоения K0': k0_value,
                     }
 
                     graph_data = _build_lab2_mode1_graph_data(
@@ -2697,8 +2708,8 @@ def lab_page(request, lab_id: int):
                 j_value = _cubic_model(content_value, j_coeffs)
 
                 calculated_results = {
-                    'tц, мин': f'{tc_value:.3f}',
-                    'J·10^4, мм/м': f'{j_value:.3f}',
+                    'tц, мин': tc_value,
+                    'J·10^4, мм/м': j_value,
                 }
 
                 graph_data = _build_lab3_graph_data(
@@ -2772,11 +2783,11 @@ def lab_page(request, lab_id: int):
 
                     calculated_results = {
                         '_mode': 'mode1',
-                        'Cγ, мм': f'{cgamma_value:.3f}',
-                        'KL': f'{kl_value:.3f}',
-                        'Px, Н': f'{px_value:.3f}',
-                        'Py, Н': f'{py_value:.3f}',
-                        'Pz, Н': f'{pz_value:.3f}',
+                        'Cγ, мм': cgamma_value,
+                        'KL': kl_value,
+                        'Px, Н': px_value,
+                        'Py, Н': py_value,
+                        'Pz, Н': pz_value,
                     }
 
                     graph_data = _build_lab4_mode1_graph_data(
@@ -2801,15 +2812,15 @@ def lab_page(request, lab_id: int):
             if error_message is None:
                 calculated_results = {
                     '_mode': 'mode2',
-                    'Cγ': f'{composition["cgamma"]:g}',
-                    'KL': f'{composition["kl"]:g}',
-                    'Pz, Н': f'{composition["pz"]:g}',
-                    'Nγ, Н': f'{composition["ngamma"]:g}',
-                    'Fγ, Н': f'{composition["fgamma"]:g}',
-                    'qN, МПа': f'{composition["qn"]:g}',
-                    'qF, МПа': f'{composition["qf"]:g}',
-                    'σN, МПа': f'{composition["sigma_n"]:g}',
-                    'τF, МПа': f'{composition["tau_f"]:g}',
+                    'Cγ': composition["cgamma"],
+                    'KL': composition["kl"],
+                    'Pz, Н': composition["pz"],
+                    'Nγ, Н': composition["ngamma"],
+                    'Fγ, Н': composition["fgamma"],
+                    'qN, МПа': composition["qn"],
+                    'qF, МПа': composition["qf"],
+                    'σN, МПа': composition["sigma_n"],
+                    'τF, МПа': composition["tau_f"],
                 }
 
                 graph_data = _build_lab4_mode2_chart_data()
@@ -2881,12 +2892,12 @@ def lab_page(request, lab_id: int):
 
                     calculated_results = {
                         '_mode': 'mode1',
-                        'Qп': f'{qp_value:.3f}',
-                        'Qз': f'{qz_value:.3f}',
-                        'qп': f'{qpi_value:.3f}',
-                        'qз': f'{qzi_value:.3f}',
-                        'Тп.ср.': f'{tp_avg_value:.3f}',
-                        'Тз.ср.': f'{tz_avg_value:.3f}',
+                        'Qп': qp_value,
+                        'Qз': qz_value,
+                        'qп': qpi_value,
+                        'qз': qzi_value,
+                        'Тп.ср.': tp_avg_value,
+                        'Тз.ср.': tz_avg_value,
                     }
 
                     graph_data = _build_lab5_mode1_graph_data(
@@ -2920,12 +2931,12 @@ def lab_page(request, lab_id: int):
                 else:
                     calculated_results = {
                         '_mode': 'mode2',
-                        'Qп': f'{coating_results["Qп"]:g}',
-                        'Qз': f'{coating_results["Qз"]:g}',
-                        'qп': f'{coating_results["qп"]:g}',
-                        'qз': f'{coating_results["qз"]:g}',
-                        'Тп.ср.': f'{coating_results["Тп.ср."]:g}',
-                        'Тз.ср.': f'{coating_results["Тз.ср."]:g}',
+                        'Qп': coating_results["Qп"],
+                        'Qз': coating_results["Qз"],
+                        'qп': coating_results["qп"],
+                        'qз': coating_results["qз"],
+                        'Тп.ср.': coating_results["Тп.ср."],
+                        'Тз.ср.': coating_results["Тз.ср."],
                     }
 
                     graph_data = _build_lab5_mode2_chart_data(operation_type)
@@ -2952,9 +2963,9 @@ def lab_page(request, lab_id: int):
                 else:
                     calculated_results = {
                         '_mode': 'mode3',
-                        'стружка': f'{coating_results["стружка"]:g}',
-                        'инструмент': f'{coating_results["инструмент"]:g}',
-                        'заготовка': f'{coating_results["заготовка"]:g}',
+                        'стружка': coating_results["стружка"],
+                        'инструмент': coating_results["инструмент"],
+                        'заготовка': coating_results["заготовка"],
                     }
 
                     graph_data = _build_lab5_mode3_chart_data(operation_type)
@@ -3029,11 +3040,11 @@ def lab_page(request, lab_id: int):
 
                 calculated_results = {
                     '_mode': 'mode1',
-                    'qN': f'{qn_value:.3f}',
-                    'qF': f'{qf_value:.3f}',
-                    'sigmaN': f'{sigma_n_value:.3f}',
-                    'tauF': f'{tau_f_value:.3f}',
-                    'sigmaMax': f'{sigma_max_value:.3f}',
+                    'qN': qn_value,
+                    'qF': qf_value,
+                    'sigmaN': sigma_n_value,
+                    'tauF': tau_f_value,
+                    'sigmaMax': sigma_max_value,
                 }
 
                 graph_data = _build_lab6_mode1_graph_data(
@@ -3069,10 +3080,10 @@ def lab_page(request, lab_id: int):
 
                     calculated_results = {
                         '_mode': 'mode2',
-                        'sigma1': f'{comp_data.get(stress_coating, {}).get("sigma1", 0):g}',
-                        'sigma_ost': f'{comp_data.get(stress_coating, {}).get("sigma_ost", 0):g}',
-                        'sigma_t': f'{comp_data.get(stress_coating, {}).get("sigma_t", 0):g}',
-                        'sigma_sum': f'{comp_data.get(stress_coating, {}).get("sigma_sum", 0):g}',
+                        'sigma1': comp_data.get(stress_coating, {}).get("sigma1", 0),
+                        'sigma_ost': comp_data.get(stress_coating, {}).get("sigma_ost", 0),
+                        'sigma_t': comp_data.get(stress_coating, {}).get("sigma_t", 0),
+                        'sigma_sum': comp_data.get(stress_coating, {}).get("sigma_sum", 0),
                     }
 
                     graph_data = {
@@ -3131,7 +3142,7 @@ def lab_page(request, lab_id: int):
 
             calculated_results = {
                 '_mode': 'lab7',
-                'T, мин': f'{T:.3f}',
+                'T, мин': T,
             }
 
             graph_data = _build_lab7_graph_data(
